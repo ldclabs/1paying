@@ -28,22 +28,6 @@ export default defineConfig({
     }
   },
   server: {
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:4943',
-        changeOrigin: true
-      },
-      '/authorize': {
-        target: 'https://txs.1pay.ing',
-        changeOrigin: true,
-        secure: true
-      },
-      '/tx': {
-        target: 'https://txs.1pay.ing',
-        changeOrigin: true,
-        secure: true
-      }
-    }
   },
   plugins: [
     environment('all', { prefix: 'CANISTER_' }),

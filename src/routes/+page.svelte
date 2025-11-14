@@ -317,17 +317,17 @@
       title: 'Product',
       links: [
         { label: 'Docs', href: 'https://github.com/ldclabs/1paying-kit' },
-        { label: 'GitHub', href: 'https://github.com/ldclabs/1paying-kit' }
+        { label: 'GitHub', href: 'https://github.com/ldclabs/1paying' }
       ]
     },
     {
       title: 'Community',
-      links: [{ label: 'Twitter', href: 'https://x.com/1Paying' }]
+      links: [{ label: 'X', href: 'https://x.com/i/communities/1988555176517513709' }]
     },
     {
       title: 'Us',
       links: [
-        { label: 'About Us', href: 'https://1pay.ing' },
+        { label: 'About Us', href: 'https://x.com/1Paying' },
         { label: 'Contact', href: 'mailto:hi@1pay.ing' }
       ]
       // },
@@ -897,14 +897,30 @@
       <div
         class="mt-12 flex flex-col gap-2 border-t border-slate-100 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between"
       >
-        <p
-          >© {new Date().getFullYear()}
-          <span class="font-outfit font-bold text-black">1Pay.ing</span>. All
-          rights reserved.</p
-        >
-        <a class="hover:text-slate-900" href="mailto:team@1pay.ing"
-          >hi@1pay.ing</a
-        >
+        <div class="space-y-1">
+          <p>
+            © {new Date().getFullYear()}
+            <span class="font-outfit font-bold text-black">1Pay.ing</span>. All
+            rights reserved.
+          </p>
+          <p>
+            1Pay.ing App is open source on
+            <a
+              href="https://github.com/ldclabs/1paying"
+              target="_blank"
+              rel="noreferrer"
+              class="font-medium text-sky-600 hover:text-sky-500"
+            >
+              GitHub
+            </a>
+            .
+          </p>
+        </div>
+        <div class="space-y-1 text-right sm:text-left">
+          <a class="block hover:text-slate-900" href="mailto:team@1pay.ing"
+            >hi@1pay.ing</a
+          >
+        </div>
       </div>
     </div>
   </footer>
