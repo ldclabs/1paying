@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+}
+
+@layer base {
+  /* disable chrome cancel button */
+  input[type='search']::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+/* Custom font: Outfit Regular */
+@font-face {
+  font-family: 'Outfit';
+  src:
+    local('Outfit Regular'),
+    local('Outfit-Regular'),
+    url('/_assets/fonts/Outfit-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  text-autospace: normal;
+}
+
+/* Utility class to apply Outfit selectively */
+.font-outfit {
+  font-family:
+    'Outfit',
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    'Noto Sans',
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol',
+    'Noto Color Emoji';
+}

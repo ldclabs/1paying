@@ -1,0 +1,23 @@
+{
+  "canisters": {
+    "1paying": {
+      "dependencies": [],
+      "build": [
+        "echo 'Disable dfx build for 1paying because some issue, you should run npm build manually'"
+      ],
+      "source": [
+        "build"
+      ],
+      "type": "assets",
+      "workspace": "1paying"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
