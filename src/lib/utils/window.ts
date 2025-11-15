@@ -257,3 +257,30 @@ export function copyTextToClipboard(text: string): Promise<boolean> {
     return Promise.resolve(false)
   }
 }
+
+export function isInMobileBrowser(): boolean {
+  if (!isWindowDefined || !navigator || !navigator.userAgent) return false
+
+  const ua = navigator.userAgent || ''
+
+  // Common mobile indicators, excluding some tablet/desktop cases where possible.
+  const isAndroid = /Android/i.test(ua)
+  const isIOS = /(iPhone|iPod)/i.test(ua)
+  const isIPad = /iPad/i.test(ua)
+  const isMobileKeyword = /Mobile/i.test(ua)
+
+  // iPad on iOS 13+ reports as MacIntel with touch; we treat that as mobile browser.
+  const isTouchMac =
+    !isAndroid &&
+    !isIOS &&
+    !isIPad &&
+    typeof navigator.maxTouchPoints === 'number' &&
+    navigator.maxTouchPoints > 1 &&
+    /Macintosh/i.test(ua)
+
+  if (isIOS || isAndroid) return true
+  if (isIPad && isMobileKeyword) return true
+  if (isTouchMac) return true
+
+  return false
+}

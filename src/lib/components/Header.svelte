@@ -14,7 +14,7 @@
     <a href="/" class="flex flex-col items-start">
       <img src="/_assets/1pay_dark.webp" alt="1Pay.ing" class="h-10 w-auto" />
       <span class="font-outfit text-sm text-slate-500"
-        >The x402 Payment Wallet</span
+        >The Web3 Payment Wallet</span
       >
     </a>
     {@render children?.()}

@@ -20,5 +20,5 @@
   {#if isLoading}
     <Spinner class="mr-3 -ml-1 size-5 text-white" />
   {/if}
-  <span>{@render children()}</span>
+  {@render children()}
 </button>

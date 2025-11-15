@@ -119,7 +119,7 @@
       onclick={refreshHistory}
       disabled={historyLoading}
     >
-      <span class="*:size-4">
+      <span class="*:size-4" class:animate-spin={historyLoading}>
         <RefreshLine />
       </span>
       <span>{historyLoading ? 'Refreshing…' : 'Refresh'}</span>

@@ -322,7 +322,9 @@
     },
     {
       title: 'Community',
-      links: [{ label: 'X', href: 'https://x.com/i/communities/1988555176517513709' }]
+      links: [
+        { label: 'X', href: 'https://x.com/i/communities/1988555176517513709' }
+      ]
     },
     {
       title: 'Us',
@@ -389,8 +391,7 @@
       <a
         class="rounded-full border border-slate-100 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100"
         href="https://github.com/ldclabs/1paying-kit"
-        target="_blank"
-        rel="noreferrer"
+        target="1PayingKit"
         onclick={() => (mobileNavOpen = false)}
       >
         Get Started
@@ -443,7 +444,9 @@
           use:fadeIn={{ delay: 200 }}
           class="w-full max-w-md self-center rounded-sm border border-slate-100 bg-white/90 p-8 shadow-2xl shadow-sky-500/15 backdrop-blur lg:max-w-lg"
         >
-          <div class="flex items-center justify-between">
+          <div
+            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+          >
             <h2
               class="text-base font-semibold tracking-[0.4em] text-slate-600 uppercase"
             >
@@ -452,9 +455,9 @@
             <PrimaryButton
               onclick={launchApp}
               isLoading={isLoadingApp}
-              class="bg-sky-100! px-4! py-2! font-semibold"
+              class="bg-green-100! px-4! py-2! font-semibold"
             >
-              <span class="text-sky-600">Launch app</span>
+              <span class="text-sm text-sky-600">Launch app</span>
             </PrimaryButton>
           </div>
           <p class="mt-4 text-sm text-slate-600">
@@ -498,7 +501,7 @@
                 micropayments and see frictionless HTTP 402 flows in action.
               </p>
               <div
-                class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
               >
                 <span
                   class="text-xs font-semibold tracking-[0.3em] text-slate-400 uppercase"
@@ -508,8 +511,7 @@
                 <a
                   class="inline-flex items-center justify-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400"
                   href="https://1paying-coffee.zensh.workers.dev/"
-                  target="_blank"
-                  rel="noreferrer"
+                  target="1PayingCoffeeDemo"
                 >
                   Visit Demo
                 </a>
@@ -680,7 +682,7 @@
           <p class="mt-6 max-w-3xl text-base text-slate-600">
             <span class="font-outfit font-bold text-black">PAY</span> (<a
               href="https://solscan.io/token/PAYiNGqaLFRdBomkQY3JXZeCm7wzK7hKuhrJDzcZBWN"
-              target="_blank"
+              target="1PayingToken"
               class="inline-flex flex-row items-center align-middle text-xs hover:text-sky-500"
             >
               <img
@@ -851,16 +853,14 @@
             <a
               class="inline-flex items-center justify-center rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
               href="https://github.com/ldclabs/1paying-kit"
-              target="_blank"
-              rel="noreferrer"
+              target="1PayingKit"
             >
               Read the Docs
             </a>
             <a
               class="inline-flex items-center justify-center rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-400 hover:bg-white/70"
               href="https://x.com/1Paying"
-              target="_blank"
-              rel="noreferrer"
+              target="1PayingCommunity"
             >
               Join the Community
             </a>
@@ -885,8 +885,7 @@
                   <a
                     class="transition hover:text-slate-900"
                     href={link.href}
-                    target="_blank"
-                    rel="noreferrer">{link.label}</a
+                    target={'View' + link.label}>{link.label}</a
                   >
                 </li>
               {/each}
@@ -907,8 +906,7 @@
             1Pay.ing App is open source on
             <a
               href="https://github.com/ldclabs/1paying"
-              target="_blank"
-              rel="noreferrer"
+              target="1PayingGithub"
               class="font-medium text-sky-600 hover:text-sky-500"
             >
               GitHub

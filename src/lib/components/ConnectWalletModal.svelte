@@ -41,19 +41,6 @@
   class="m-auto mb-6 flex w-full max-w-sm flex-col items-center justify-center gap-6"
 >
   <Button
-    onclick={() => onSignWith('ii')}
-    disabled={isSigningIn}
-    isLoading={isSigningIn && signWith === 'ii'}
-    class="w-full justify-between rounded-xl bg-slate-100 px-4 py-2 text-lg hover:bg-slate-200 hover:shadow-md disabled:hover:bg-slate-100 disabled:hover:shadow-none"
-  >
-    <img
-      src="/_assets/images/icp.webp"
-      alt="Internet Computer Logo"
-      class="h-6 w-auto"
-    />
-    <span>Internet Identity</span>
-  </Button>
-  <Button
     onclick={() => onSignWith('phantom')}
     disabled={!isPhantomAvailable || isSigningIn}
     isLoading={isSigningIn && signWith === 'phantom'}
@@ -69,5 +56,18 @@
         <small class="ml-2 text-slate-400">(Not installed)</small>
       {/if}</span
     >
+  </Button>
+  <Button
+    onclick={() => onSignWith('ii')}
+    disabled={isSigningIn}
+    isLoading={isSigningIn && signWith === 'ii'}
+    class="w-full justify-between rounded-xl bg-slate-100 px-4 py-2 text-lg hover:bg-slate-200 hover:shadow-md disabled:hover:bg-slate-100 disabled:hover:shadow-none"
+  >
+    <img
+      src="/_assets/images/icp.webp"
+      alt="Internet Computer Logo"
+      class="h-6 w-auto"
+    />
+    <span>Internet Identity</span>
   </Button>
 </div>
