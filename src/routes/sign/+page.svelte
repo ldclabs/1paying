@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { page } from '$app/state'
   import ConnectWalletModal from '$lib/components/ConnectWalletModal.svelte'
   import Header from '$lib/components/Header.svelte'
-  import PaymentApp from '$lib/components/PaymentApp.svelte'
   import PaymentSign from '$lib/components/PaymentSign.svelte'
   import WalletModal from '$lib/components/WalletModal.svelte'
   import LogoutCircleRLine from '$lib/icons/logout-circle-r-line.svelte'
@@ -13,12 +11,9 @@
   import PrimaryButton from '$lib/ui/PrimaryButton.svelte'
 
   const isAuthenticated = $derived(authStore.identity.isAuthenticated)
-  const url = new URL(page.url)
-  const isSigning = url.searchParams.get('action') === 'pay'
 
   let isSigningIn = $state<boolean>(false)
   let isSigningReady = $state<boolean>(false)
-  let isAppReady = $state<boolean>(false)
 
   function onSignInModal() {
     showModal({
@@ -68,17 +63,10 @@
     </div>
   </Header>
 
-  {#if isSigning}
-    {#if !isSigningReady}
-      <Loading message="Preparing secure signing session · 1Pay.ing" />
-    {/if}
-    <PaymentSign bind:isReady={isSigningReady} />
-  {:else}
-    {#if !isAppReady}
-      <Loading message="Preparing app · 1Pay.ing" />
-    {/if}
-    <PaymentApp bind:isReady={isAppReady} />
+  {#if !isSigningReady}
+    <Loading message="Preparing secure signing session · 1Pay.ing" />
   {/if}
+  <PaymentSign bind:isReady={isSigningReady} />
 
   <footer class="border-t border-slate-100 bg-slate-50 py-8">
     <div class="mx-auto max-w-6xl px-6">

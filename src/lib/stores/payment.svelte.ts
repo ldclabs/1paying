@@ -35,7 +35,9 @@ interface AuthorizationMessage {
   notBefore?: number
 }
 
-class PaymentStore {
+export const EventReady = 'Ready'
+
+class PaymentStore extends EventTarget {
   #identity: IdentityEx
   #icpAPI: Record<string, TokenLedgerAPI>
   #svmRpc: SvmRpc
@@ -48,6 +50,7 @@ class PaymentStore {
   #refreshingTxsCwt: boolean = false
 
   constructor() {
+    super()
     this.#identity = anonymousIdentity
     this.#icpAPI = {}
     this.#svmRpc = new SvmRpc([
@@ -80,24 +83,19 @@ class PaymentStore {
   }
 
   setIdentity(identity: IdentityEx) {
+    this.#icpX402 = null
+    this.#txsCwt = ''
+    this.#cwtExpiresAt = 0
     this.#identity = identity
-    if (!identity.isAuthenticated) {
-      this.#icpX402 = null
-      this.#txsCwt = ''
-      this.#cwtExpiresAt = 0
-    } else {
-      if (!this.#icpX402) {
-        this.#icpX402 = new X402Canister(
-          ANDA_X402_CANISTER_ID,
-          identity.id as any as SignIdentity
-        )
-      } else {
-        this.#icpX402.setIdentity(identity.id as any as SignIdentity)
-      }
+    if (identity.isAuthenticated) {
+      this.#icpX402 = new X402Canister(
+        ANDA_X402_CANISTER_ID,
+        identity.id as any as SignIdentity
+      )
 
       this.tryRefreshTxsCwt().then(async () => {
-        const profile = await this.getProfile()
-        console.log('User profile:', profile)
+        // const profile = await this.getProfile()
+        // console.log('User profile:', profile)
       })
     }
   }
@@ -255,6 +253,7 @@ class PaymentStore {
   }
 
   async tryRefreshTxsCwt(depth: number = 0): Promise<void> {
+    const hadToken = Boolean(this.#txsCwt)
     if (
       depth === 0 &&
       (Date.now() < this.#cwtExpiresAt - 600000 || this.#refreshingTxsCwt)
@@ -298,6 +297,10 @@ class PaymentStore {
       this.#cwtExpiresAt = result.expiresAt
 
       this.#refreshingTxsCwt = false
+
+      if (!hadToken && this.#txsCwt) {
+        this.dispatchEvent(new Event(EventReady))
+      }
     } catch (error) {
       console.error('Error refreshing transaction CWT:', error)
       if (depth >= 10) {

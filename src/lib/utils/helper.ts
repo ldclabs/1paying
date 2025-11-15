@@ -1,6 +1,8 @@
 import { Principal } from '@dfinity/principal'
 import { isAddress } from '@solana/kit'
 
+const locale = new Intl.Locale(globalThis?.navigator.language || 'en')
+
 export function pruneCanister(canisterId: string, long?: boolean) {
   if (long ?? globalThis.innerWidth >= 640) return canisterId
   return canisterId.slice(0, 7) + '...' + canisterId.slice(-5)
@@ -31,6 +33,19 @@ export function validateAddress(chain: string, address: string): boolean {
       return isAddress(address)
     default:
       return /^0x[a-fA-F0-9]{40}$/.test(address)
+  }
+}
+
+const dateTimeFormatter = new Intl.DateTimeFormat(locale, {
+  dateStyle: 'medium',
+  timeStyle: 'short'
+})
+
+export function formatDateTime(timestamp: number): string {
+  try {
+    return dateTimeFormatter.format(timestamp)
+  } catch (error) {
+    return new Date(timestamp).toLocaleString()
   }
 }
 

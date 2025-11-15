@@ -1,15 +1,14 @@
 <script lang="ts">
   import { authStore } from '$lib/stores/auth.svelte'
-  import { toastRun } from '$lib/stores/toast.svelte'
   import { onMount } from 'svelte'
   import PaymentHistory from './PaymentHistory.svelte'
 
   const myIcpAddress = $derived(authStore.identity.getPrincipal().toText())
 
+  let { isReady = $bindable() }: { isReady: boolean } = $props()
+
   onMount(() => {
-    return toastRun(async () => {
-      // await refreshHistory()
-    }).abort
+    isReady = true
   })
 </script>
 

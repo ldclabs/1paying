@@ -46,7 +46,9 @@ export const phantomSdk = new BrowserSDK({
   addressTypes: [AddressType.solana, AddressType.ethereum]
 })
 
-class AuthStore {
+export const EventLogin = 'Login'
+
+class AuthStore extends EventTarget {
   static async init() {
     // Fetch the root key for local development
     if (IS_LOCAL) {
@@ -80,6 +82,9 @@ class AuthStore {
     paymentStore.setIdentity(identity)
     authStore.#identity = identity
     authStore.#supportNetworks = supportNetworks
+    authStore.dispatchEvent(
+      new CustomEvent(EventLogin, { detail: identity.getPrincipal().toText() })
+    )
   }
 
   static async #checkIdentity(identity: IdentityEx) {
@@ -110,6 +115,10 @@ class AuthStore {
 
   #identity = $state<IdentityEx>(anonymousIdentity)
   #supportNetworks = $state<string[]>([...fullSupportNetworks])
+
+  constructor() {
+    super()
+  }
 
   get backedBy() {
     return this.#identity.backedBy

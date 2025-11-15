@@ -2,11 +2,15 @@
   import ArrowRightUpLine from '$lib/icons/arrow-right-up-line.svelte'
   import RefreshLine from '$lib/icons/refresh-line.svelte'
   import { authStore } from '$lib/stores/auth.svelte'
-  import { paymentStore } from '$lib/stores/payment.svelte.ts'
+  import { paymentStore, EventReady } from '$lib/stores/payment.svelte.ts'
   import { toastRun } from '$lib/stores/toast.svelte'
   import type { PaymentLog } from '$lib/types/pay'
-  import { errMessage } from '$lib/types/result.ts'
-  import { formatTimeAgo, pruneAddress, pruneText } from '$lib/utils/helper'
+  import {
+    formatTimeAgo,
+    pruneAddress,
+    pruneText,
+    formatDateTime
+  } from '$lib/utils/helper'
   import { PaymentLogInfo } from '$lib/utils/payment.svelte.ts'
   import { onMount } from 'svelte'
 
@@ -34,7 +38,6 @@
   let historyCursor = $state<string | undefined>(undefined)
   let historyLoading = $state(false)
   let historyLoadingMore = $state(false)
-  let historyError = $state('')
 
   const hasMoreHistory = $derived(Boolean(historyCursor))
 
@@ -52,35 +55,19 @@
     failed: 'border-rose-200 bg-rose-50 text-rose-600'
   }
 
-  const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  })
-
-  function formatDateTime(timestamp: number): string {
-    try {
-      return dateTimeFormatter.format(timestamp)
-    } catch (error) {
-      return new Date(timestamp).toLocaleString()
-    }
-  }
-
-  async function refreshHistory() {
+  function refreshHistory() {
     if (historyLoading) {
       return
     }
 
     historyLoading = true
-    historyError = ''
-    try {
+    toastRun(async () => {
       const [logs, nextCursor] = await paymentStore.listMyHistory()
       history = logs.map((log) => new PaymentLogInfo(log))
       historyCursor = nextCursor
-    } catch (error) {
-      historyError = errMessage(error)
-    } finally {
+    }).finally(() => {
       historyLoading = false
-    }
+    })
   }
 
   async function loadMoreHistory() {
@@ -89,22 +76,21 @@
     }
 
     historyLoadingMore = true
-    historyError = ''
-    try {
+    toastRun(async () => {
       const [logs, nextCursor] = await paymentStore.listMyHistory(historyCursor)
       history.push(...logs.map((log) => new PaymentLogInfo(log)))
       historyCursor = nextCursor
-    } catch (error) {
-      historyError = errMessage(error)
-    } finally {
+    }).finally(() => {
       historyLoadingMore = false
-    }
+    })
   }
 
   onMount(() => {
-    return toastRun(async () => {
-      await refreshHistory()
-    }).abort
+    paymentStore.addEventListener(EventReady, refreshHistory)
+
+    return () => {
+      paymentStore.removeEventListener(EventReady, refreshHistory)
+    }
   })
 </script>
 
@@ -139,12 +125,6 @@
       <span>{historyLoading ? 'Refreshing…' : 'Refresh'}</span>
     </button>
   </header>
-
-  {#if historyError}
-    <div class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-      Failed to load history: {historyError}
-    </div>
-  {/if}
 
   {#if historyLoading && history.length === 0}
     <div class="flex items-center justify-center p-6 text-sm text-slate-500">

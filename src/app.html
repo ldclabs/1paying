@@ -25,7 +25,74 @@
 </head>
 
 <body data-sveltekit-preload-data="hover">
-  <div style="display: contents">%sveltekit.body%</div>
+  <div id="app-loading-root">
+    <style>
+      #app-loading-root {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #e5e7eb;
+        z-index: 9999;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      #app-loading-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .app-loading-ring {
+        position: relative;
+        width: 52px;
+        height: 52px;
+        border-radius: 9999px;
+        border: 2px solid white;
+        border-top-color: #22d3ee;
+        box-shadow: 0 0 24px rgba(34, 211, 238, 0.45);
+        animation: app-ring-spin 1s linear infinite;
+      }
+
+      .app-loading-mark {
+        position: absolute;
+        inset: 11px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #22d3ee, #38bdf8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        letter-spacing: 0.03em;
+      }
+
+      @keyframes app-ring-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+
+        .app-loading-ring,
+        .app-loading-dots::after {
+          animation: none;
+          box-shadow: none;
+        }
+      }
+    </style>
+    <div id="app-loading-inner" aria-live="polite" aria-busy="true">
+      <div class="app-loading-ring">
+        <div class="app-loading-mark">1P</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-root" style="display: contents">%sveltekit.body%</div>
 </body>
 
 </html>

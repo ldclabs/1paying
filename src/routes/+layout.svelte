@@ -10,6 +10,11 @@
   if (ref && !localStorage.getItem('ref')) {
     localStorage.setItem('ref', ref)
   }
+
+  const loader = document.getElementById('app-loading-root')
+  if (loader && loader.parentElement) {
+    loader.parentElement.removeChild(loader)
+  }
 </script>
 
 {@render children()}

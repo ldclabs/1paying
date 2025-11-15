@@ -2,7 +2,7 @@
   import { page } from '$app/state'
   import PaymentRequirementCard from '$lib/components/PaymentRequirementCard.svelte'
   import RefreshLine from '$lib/icons/refresh-line.svelte'
-  import { authStore } from '$lib/stores/auth.svelte'
+  import { authStore, EventLogin } from '$lib/stores/auth.svelte'
   import { showModal } from '$lib/stores/modal.svelte.ts'
   import { paymentStore } from '$lib/stores/payment.svelte.ts'
   import { toastRun } from '$lib/stores/toast.svelte'
@@ -19,6 +19,8 @@
 
   const myIcpAddress = $derived(authStore.identity.getPrincipal().toText())
   const isAuthenticated = $derived(authStore.identity.isAuthenticated)
+
+  let { isReady = $bindable() }: { isReady: boolean } = $props()
 
   let isLoading = $state<boolean>(false)
   let isSigningIn = $state<boolean>(false)
@@ -116,14 +118,8 @@
     }
   }
 
-  $effect(() => {
-    if (isAuthenticated) {
-      fetchMyBalance()
-    }
-  })
-
   onMount(() => {
-    return toastRun(() => {
+    return toastRun((_signal, abortingQue) => {
       const url = new URL(page.url)
       const { txid, paymentRequirementsResponse } =
         parseAndVerifyPaymentMessage(url.hash.slice(1))
@@ -132,9 +128,12 @@
       accepts = selectedPaymentRequirements(paymentRequirementsResponse.accepts)
       responseError = paymentRequirementsResponse.error
       selectedIndex = accepts.length > 0 ? 0 : -1
-      if (isAuthenticated) {
-        fetchMyBalance()
-      }
+      authStore.addEventListener(EventLogin, fetchMyBalance)
+      isReady = true
+
+      abortingQue.push(() => {
+        authStore.removeEventListener(EventLogin, fetchMyBalance)
+      })
     }).abort
   })
 </script>
