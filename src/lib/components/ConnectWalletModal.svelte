@@ -2,8 +2,6 @@
   import { authStore } from '$lib/stores/auth.svelte'
   import { toastRun } from '$lib/stores/toast.svelte'
   import Button from '$lib/ui/Button.svelte'
-  import { BrowserSDK } from '@phantom/browser-sdk'
-  import { onMount } from 'svelte'
 
   let {
     closeModal = () => {}
@@ -12,7 +10,6 @@
   } = $props()
 
   let isSigningIn = $state<boolean>(false)
-  let isPhantomAvailable = $state<boolean>(false)
   let signWith = $state<'phantom' | 'ii' | ''>('')
   function onSignWith(type: 'phantom' | 'ii') {
     isSigningIn = true
@@ -31,10 +28,6 @@
       isSigningIn = false
     })
   }
-
-  onMount(async () => {
-    isPhantomAvailable = await BrowserSDK.isPhantomInstalled(3000)
-  })
 </script>
 
 <div
@@ -42,7 +35,7 @@
 >
   <Button
     onclick={() => onSignWith('phantom')}
-    disabled={!isPhantomAvailable || isSigningIn}
+    disabled={isSigningIn}
     isLoading={isSigningIn && signWith === 'phantom'}
     class="w-full justify-between rounded-xl bg-slate-100 px-4 py-2 text-lg hover:bg-slate-200 hover:shadow-md disabled:hover:bg-slate-100 disabled:hover:shadow-none"
   >
@@ -51,11 +44,7 @@
       alt="Phantom Logo"
       class="h-6 w-auto"
     />
-    <span
-      >Phantom wallet{#if !isPhantomAvailable}
-        <small class="ml-2 text-slate-400">(Not installed)</small>
-      {/if}</span
-    >
+    <span>Phantom wallet</span>
   </Button>
   <Button
     onclick={() => onSignWith('ii')}

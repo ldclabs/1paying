@@ -1,4 +1,3 @@
-import type { SignInResponse } from '$lib/canisters/signin'
 import { SignInAPI } from '$lib/canisters/signin'
 import { IS_LOCAL, SIGNIN_CANISTER_ID } from '$lib/constants'
 import {
@@ -24,27 +23,31 @@ import {
 import { hexToBytes } from '@noble/hashes/utils'
 import { AddressType, BrowserSDK } from '@phantom/browser-sdk'
 import { paymentStore } from './payment.svelte'
+import { KVStore } from '$lib/utils/store'
+import { PhantomDeeplink, type PhantomDeeplinkState } from '$lib/utils/phantom'
+import { type SvmSigner } from '$lib/utils/svmrpc'
+import { type EvmSigner } from '$lib/utils/evmrpc'
 
 const DOMAIN = '1pay.ing'
 const IDENTITY_PROVIDER = IS_LOCAL
   ? 'http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943'
   : 'https://id.ai'
 
+const ICP_NETWORKS = ['icp']
+const SVM_NETWORKS = ['solana', 'solana-devnet']
+const EVM_NETWORKS = ['base', 'base-sepolia']
+
 const signInAPI = new SignInAPI(SIGNIN_CANISTER_ID)
 
 const authClientPromise = createAuthClient()
-const fullSupportNetworks = [
-  'icp',
-  'solana',
-  'solana-devnet',
-  'base',
-  'base-sepolia'
-]
 
-export const phantomSdk = new BrowserSDK({
+const globalKV = new KVStore(DOMAIN, 1, [['State'], ['Users']])
+
+const phantomSdk = new BrowserSDK({
   providerType: 'injected',
   addressTypes: [AddressType.solana, AddressType.ethereum]
 })
+let phantomDeeplink = new PhantomDeeplink()
 
 export const EventLogin = 'Login'
 
@@ -55,7 +58,7 @@ class AuthStore extends EventTarget {
       await Promise.all([dynAgent.fetchRootKey(), dynAgent.syncTime()])
     }
     const authClient = await authClientPromise
-    let supportNetworks = ['icp']
+    let supportNetworks = [...ICP_NETWORKS]
     let identity: IdentityEx | null
     identity = await loadMyIdentity()
     if (!identity) {
@@ -67,8 +70,23 @@ class AuthStore extends EventTarget {
         console.warn('Stored identity does not match connected wallet')
         identity = null
       } else {
-        supportNetworks = [...fullSupportNetworks]
+        if (identity.svmAddress) {
+          supportNetworks = [...supportNetworks, ...SVM_NETWORKS]
+        }
+
+        if (identity.evmAddress) {
+          supportNetworks = [...supportNetworks, ...EVM_NETWORKS]
+        }
       }
+    }
+
+    const phantomDeeplinkState = await globalKV.get<PhantomDeeplinkState>(
+      'State',
+      'PhantomDeeplink'
+    )
+
+    if (phantomDeeplinkState) {
+      phantomDeeplink = PhantomDeeplink.fromState(phantomDeeplinkState)
     }
 
     if (identity) {
@@ -76,7 +94,7 @@ class AuthStore extends EventTarget {
     }
   }
 
-  static #login(identity: IdentityEx, supportNetworks: string[] = ['icp']) {
+  static #login(identity: IdentityEx, supportNetworks: string[]) {
     identity.expiredHook = () => authStore.logout()
     dynAgent.setIdentity(identity)
     paymentStore.setIdentity(identity)
@@ -114,7 +132,11 @@ class AuthStore extends EventTarget {
   }
 
   #identity = $state<IdentityEx>(anonymousIdentity)
-  #supportNetworks = $state<string[]>([...fullSupportNetworks])
+  #supportNetworks = $state<string[]>([
+    ...ICP_NETWORKS,
+    ...SVM_NETWORKS,
+    ...EVM_NETWORKS
+  ])
 
   constructor() {
     super()
@@ -130,6 +152,23 @@ class AuthStore extends EventTarget {
 
   get supportNetworks() {
     return this.#supportNetworks
+  }
+
+  get svmSigner(): SvmSigner | null {
+    if (this.#identity.svmAddress) {
+      if (phantomDeeplink.isConnected) {
+        return phantomDeeplink
+      }
+      return phantomSdk.solana
+    }
+    return null
+  }
+
+  get evmSigner(): EvmSigner | null {
+    if (this.#identity.evmAddress) {
+      return phantomSdk.ethereum
+    }
+    return null
   }
 
   signIn(identityProvider = IDENTITY_PROVIDER) {
@@ -152,7 +191,7 @@ class AuthStore extends EventTarget {
             Date.now() + EXPIRATION_MS
           )
 
-          AuthStore.#login(identity, ['icp'])
+          AuthStore.#login(identity, [...ICP_NETWORKS])
           resolve()
         },
         onError: (err) => {
@@ -169,101 +208,19 @@ class AuthStore extends EventTarget {
 
   signInWithPhantom() {
     return new Promise<void>(async (resolve, reject) => {
+      const sessionKey = Ed25519KeyIdentity.generate()
+      const sessionPubkey = new Uint8Array(
+        (sessionKey.getPublicKey() as Ed25519PublicKey).toDer()
+      )
       try {
-        const { addresses } = await phantomSdk.connect({
-          provider: 'injected'
-        })
-        if (addresses.length === 0) {
-          throw new Error('No addresses returned from Phantom wallet')
-        }
-
-        const { addressType, address } = addresses[0]!
-        const sessionKey = Ed25519KeyIdentity.generate()
-        const sessionPubkey = new Uint8Array(
-          (sessionKey.getPublicKey() as Ed25519PublicKey).toDer()
-        )
-        const nowMs = BigInt(Date.now())
-        let res: SignInResponse
-        let svmAddress: string = ''
-        let evmAddress: string = ''
-        if (addressType == AddressType.solana) {
-          svmAddress = address
-          if (
-            addresses[1] &&
-            addresses[1]!.addressType == AddressType.ethereum
-          ) {
-            evmAddress = addresses[1]!.address
-          }
-          const message = await signInAPI.getSignInWithSolanaMessage(
-            DOMAIN,
-            address,
-            nowMs
-          )
-          const { signature, publicKey } =
-            await phantomSdk.solana.signMessage(message)
-          if (publicKey !== address) {
-            throw new Error('Signed public key does not match the address')
-          }
-          const sessionSig = await sessionKey.sign(signature)
-          res = await signInAPI.signInWithSolana(
-            DOMAIN,
-            address,
-            nowMs,
-            message,
-            signature,
-            sessionPubkey,
-            sessionSig
-          )
-        } else if (addressType == AddressType.ethereum) {
-          const [accounts, chainId] = await Promise.all([
-            phantomSdk.ethereum.request({
-              method: 'eth_accounts'
-            }),
-            phantomSdk.ethereum.request({
-              method: 'eth_chainId'
-            })
-          ])
-
-          if (accounts.length === 0 || accounts[0] !== address) {
-            throw new Error('Ethereum address mismatch')
-          }
-
-          const _chainId = parseInt(chainId, 16)
-          evmAddress = address
-          if (addresses[1] && addresses[1]!.addressType == AddressType.solana) {
-            svmAddress = addresses[1]!.address
-          }
-          const message = await signInAPI.getSignInWithEthereumMessage(
-            DOMAIN,
-            address,
-            _chainId,
-            nowMs
-          )
-          const signature = await phantomSdk.ethereum.signPersonalMessage(
-            message,
-            address
-          )
-
-          const sig = hexToBytes(signature.replace(/^0x/, ''))
-          const sessionSig = await sessionKey.sign(sig)
-          res = await signInAPI.signInWithEthereum(
-            DOMAIN,
-            address,
-            _chainId,
-            nowMs,
-            message,
-            sig,
-            sessionPubkey,
-            sessionSig
-          )
-        } else {
-          throw new Error(`Unsupported address type: ${addressType}`)
-        }
-
+        const isPhantomAvailable = await BrowserSDK.isPhantomInstalled(1000)
+        const { svmAddress, evmAddress, signInResponse } = isPhantomAvailable
+          ? await this.#signInWithPhantomExtension(sessionKey)
+          : await this.#signInWithPhantomDeeplink(sessionKey)
         const signedDelegation = await signInAPI.getDelegation(
-          res.seed as Uint8Array,
+          signInResponse.seed as Uint8Array,
           sessionPubkey,
-          res.expiration
+          signInResponse.expiration
         )
 
         const chain = DelegationChain.fromDelegations(
@@ -281,7 +238,7 @@ class AuthStore extends EventTarget {
             }
           ],
           toUint8Array(
-            res.user_key,
+            signInResponse.user_key,
             '__derEncodedPublicKey__'
           ) as DerEncodedPublicKey
         )
@@ -292,7 +249,15 @@ class AuthStore extends EventTarget {
           evmAddress,
           backedBy: 'Phantom'
         })
-        AuthStore.#login(identity, [...fullSupportNetworks])
+        let supportNetworks = [...ICP_NETWORKS]
+        if (identity.svmAddress) {
+          supportNetworks = [...supportNetworks, ...SVM_NETWORKS]
+        }
+        if (identity.evmAddress) {
+          supportNetworks = [...supportNetworks, ...EVM_NETWORKS]
+        }
+
+        AuthStore.#login(identity, supportNetworks)
         resolve()
       } catch (err: any) {
         console.error('Connect wallet failed:', err, err.data)
@@ -301,14 +266,149 @@ class AuthStore extends EventTarget {
     })
   }
 
+  async #signInWithPhantomExtension(sessionKey: Ed25519KeyIdentity) {
+    const { addresses } = await phantomSdk.connect({
+      provider: 'injected'
+    })
+    if (addresses.length === 0) {
+      throw new Error('No addresses returned from Phantom wallet')
+    }
+
+    const { addressType, address } = addresses[0]!
+    const sessionPubkey = new Uint8Array(
+      (sessionKey.getPublicKey() as Ed25519PublicKey).toDer()
+    )
+    const nowMs = BigInt(Date.now())
+    let svmAddress: string = ''
+    let evmAddress: string = ''
+    if (addressType == AddressType.solana) {
+      svmAddress = address
+      if (addresses[1] && addresses[1]!.addressType == AddressType.ethereum) {
+        evmAddress = addresses[1]!.address
+      }
+      const message = await signInAPI.getSignInWithSolanaMessage(
+        DOMAIN,
+        address,
+        nowMs
+      )
+      const { signature, publicKey } =
+        await phantomSdk.solana.signMessage(message)
+      if (publicKey !== address) {
+        throw new Error('Signed public key does not match the address')
+      }
+      const sessionSig = await sessionKey.sign(signature)
+      const signInResponse = await signInAPI.signInWithSolana(
+        DOMAIN,
+        address,
+        nowMs,
+        message,
+        signature,
+        sessionPubkey,
+        sessionSig
+      )
+
+      return {
+        svmAddress,
+        evmAddress,
+        signInResponse
+      }
+    } else if (addressType == AddressType.ethereum) {
+      const [accounts, chainId] = await Promise.all([
+        phantomSdk.ethereum.request({
+          method: 'eth_accounts'
+        }),
+        phantomSdk.ethereum.request({
+          method: 'eth_chainId'
+        })
+      ])
+
+      if (accounts.length === 0 || accounts[0] !== address) {
+        throw new Error('Ethereum address mismatch')
+      }
+
+      const _chainId = parseInt(chainId, 16)
+      evmAddress = address
+      if (addresses[1] && addresses[1]!.addressType == AddressType.solana) {
+        svmAddress = addresses[1]!.address
+      }
+      const message = await signInAPI.getSignInWithEthereumMessage(
+        DOMAIN,
+        address,
+        _chainId,
+        nowMs
+      )
+      const signature = await phantomSdk.ethereum.signPersonalMessage(
+        message,
+        address
+      )
+
+      const sig = hexToBytes(signature.replace(/^0x/, ''))
+      const sessionSig = await sessionKey.sign(sig)
+      const signInResponse = await signInAPI.signInWithEthereum(
+        DOMAIN,
+        address,
+        _chainId,
+        nowMs,
+        message,
+        sig,
+        sessionPubkey,
+        sessionSig
+      )
+      return {
+        svmAddress,
+        evmAddress,
+        signInResponse
+      }
+    } else {
+      throw new Error(`Unsupported address type: ${addressType}`)
+    }
+  }
+
+  async #signInWithPhantomDeeplink(sessionKey: Ed25519KeyIdentity) {
+    await phantomDeeplink.connect()
+    await globalKV.set('State', phantomDeeplink.toState(), 'PhantomDeeplink')
+    const nowMs = BigInt(Date.now())
+    const svmAddress = phantomDeeplink.address
+    const message = await signInAPI.getSignInWithSolanaMessage(
+      DOMAIN,
+      svmAddress,
+      nowMs
+    )
+    const { signature, publicKey } = await phantomDeeplink.signMessage(message)
+    if (publicKey !== svmAddress) {
+      throw new Error('Signed public key does not match the address')
+    }
+    const sessionPubkey = new Uint8Array(
+      (sessionKey.getPublicKey() as Ed25519PublicKey).toDer()
+    )
+    const sessionSig = await sessionKey.sign(signature)
+    const signInResponse = await signInAPI.signInWithSolana(
+      DOMAIN,
+      publicKey,
+      nowMs,
+      message,
+      signature,
+      sessionPubkey,
+      sessionSig
+    )
+    return {
+      svmAddress,
+      evmAddress: '', // deeplink only supports Solana for now
+      signInResponse
+    }
+  }
+
   async logout(url: string = '/app') {
     this.#identity = anonymousIdentity
-    this.#supportNetworks = [...fullSupportNetworks]
+    this.#supportNetworks = [...ICP_NETWORKS, ...SVM_NETWORKS, ...EVM_NETWORKS]
     dynAgent.setIdentity(anonymousIdentity)
     phantomSdk.disconnect()
 
     const authClient = await authClientPromise
     await removeMyIdentity()
+    phantomDeeplink = new PhantomDeeplink()
+    await globalKV.delete('State', 'PhantomDeeplink')
+
     await authClient.logout()
     url && window.location.assign(url) // force reload to clear all auth state!!
   }

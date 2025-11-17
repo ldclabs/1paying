@@ -26,6 +26,10 @@ export const authorizationTypes = {
 
 export const authorizationPrimaryType = 'TransferWithAuthorization'
 
+export interface EvmSigner {
+  signTypedData(typedData: any, address: string): Promise<string>
+}
+
 export class EvmRpc {
   #providers: string[]
   #endpoint: string
@@ -119,9 +123,7 @@ export class EvmRpc {
   }
 
   async createAndSignPayment(
-    singer: {
-      signTypedData(typedData: any, address: string): Promise<string>
-    },
+    signer: EvmSigner,
     payer: string,
     x402Version: number,
     paymentRequirements: PaymentRequirements,
@@ -152,7 +154,7 @@ export class EvmRpc {
       message: paymentPayload.payload.authorization
     }
 
-    paymentPayload.payload.signature = await singer.signTypedData(data, payer)
+    paymentPayload.payload.signature = await signer.signTypedData(data, payer)
     return paymentPayload
   }
 

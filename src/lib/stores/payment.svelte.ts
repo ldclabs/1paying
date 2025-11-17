@@ -20,9 +20,9 @@ import {
   deterministicEncode,
   signMessage
 } from '@ldclabs/ic-auth'
-import { phantomSdk } from './auth.svelte'
+import { authStore } from './auth.svelte'
 
-const TXS_ENDPOINT = 'https://txs.1pay.ing'
+const API_ENDPOINT = 'https://api.1pay.ing'
 
 interface AuthorizationRequest {
   message: AuthorizationMessage // 1Paying client session delegation
@@ -181,7 +181,7 @@ class PaymentStore extends EventTarget {
   }
 
   async getProfile(): Promise<UserProfile> {
-    const response = await fetch(`${TXS_ENDPOINT}/my/profile`, {
+    const response = await fetch(`${API_ENDPOINT}/my/profile`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${this.#txsCwt}`
@@ -205,7 +205,7 @@ class PaymentStore extends EventTarget {
       return [[], undefined]
     }
 
-    let url = `${TXS_ENDPOINT}/my/txs?limit=5`
+    let url = `${API_ENDPOINT}/my/txs?limit=5`
     if (cursor) {
       url += `&cursor=${cursor}`
     }
@@ -235,7 +235,7 @@ class PaymentStore extends EventTarget {
   ): Promise<void> {
     await this.tryRefreshTxsCwt()
 
-    const response = await fetch(`${TXS_ENDPOINT}/tx/${tx}`, {
+    const response = await fetch(`${API_ENDPOINT}/tx/${tx}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -266,7 +266,7 @@ class PaymentStore extends EventTarget {
     this.#refreshingTxsCwt = true
     try {
       const message: AuthorizationMessage = {
-        expiration: 3500
+        expiration: 86400
       }
       const sig = await signMessage(
         this.#identity.id as any as DelegationIdentity,
@@ -277,7 +277,7 @@ class PaymentStore extends EventTarget {
         message,
         signature: bytesToBase64Url(deterministicEncode(sig))
       }
-      const response = await fetch(`${TXS_ENDPOINT}/authorize`, {
+      const response = await fetch(`${API_ENDPOINT}/authorize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -359,8 +359,12 @@ class PaymentStore extends EventTarget {
   ): Promise<TransactionResult<string>> {
     const rpc =
       info.payment.network === 'solana' ? this.#svmRpc : this.#svmdevRpc
+    const signer = authStore.svmSigner
+    if (!signer) {
+      throw new Error('SVM signer is not available')
+    }
     const payload = await rpc.createAndSignPayment(
-      phantomSdk.solana!,
+      signer,
       this.#identity.svmAddress!,
       x402Version,
       info.payment,
@@ -394,9 +398,13 @@ class PaymentStore extends EventTarget {
   ): Promise<TransactionResult<string>> {
     const rpc =
       info.payment.network === 'base' ? this.#baseRpc : this.#baseSepoliaRpc
-    await phantomSdk.ethereum?.switchChain(info.token!.chainId!)
+    const signer = authStore.evmSigner
+    if (!signer) {
+      throw new Error('EVM signer is not available')
+    }
+
     const payload = await rpc.createAndSignPayment(
-      phantomSdk.ethereum!,
+      signer,
       this.#identity.evmAddress!,
       x402Version,
       info.payment,

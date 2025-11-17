@@ -15,7 +15,7 @@ import {
 } from '@dfinity/identity'
 import type { Principal } from '@dfinity/principal'
 
-export const EXPIRATION_MS = 1000 * 60 * 60 // 1 hour
+export const EXPIRATION_MS = 1000 * 60 * 60 * 24 * 30 // 30 days
 
 export class IdentityEx implements Identity {
   expiredHook: (() => void) | null = null

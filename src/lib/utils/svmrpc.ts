@@ -31,6 +31,12 @@ import {
 
 const addressEncoder = getAddressEncoder()
 
+export interface SvmSigner {
+  signTransaction(
+    transaction: VersionedTransaction | Transaction
+  ): Promise<VersionedTransaction | Transaction>
+}
+
 export class SvmRpc {
   #providers: string[]
   #devnet = false
@@ -122,11 +128,7 @@ export class SvmRpc {
   }
 
   async createAndSignPayment(
-    singer: {
-      signTransaction(
-        transaction: VersionedTransaction | Transaction
-      ): Promise<VersionedTransaction | Transaction>
-    },
+    signer: SvmSigner,
     payer: string,
     x402Version: number,
     paymentRequirements: PaymentRequirements,
@@ -142,7 +144,7 @@ export class SvmRpc {
     const transaction = new VersionedTransaction(
       transactionMessage.compileToV0Message()
     )
-    const signedTransaction = await singer.signTransaction(transaction)
+    const signedTransaction = await signer.signTransaction(transaction)
     const bytes = signedTransaction.serialize({ requireAllSignatures: false })
     // encode signed transaction to base64
     const base64EncodedWireTransaction = Buffer.from(bytes).toString('base64')

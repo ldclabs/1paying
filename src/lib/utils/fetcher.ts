@@ -1,5 +1,5 @@
-import { decodeCBOR, encodeCBOR } from '@ldclabs/cose-ts/utils'
-import { joinURL, toURLSearchParams, type URLSearchParamsInit } from './url'
+import { decode, encode, rfc8949EncodeOptions } from 'cborg'
+import { joinURL, type URLSearchParamsInit } from './url'
 
 export const CBOR_MIME_TYPE = 'application/cbor'
 export const JSON_MIME_TYPE = 'application/json'
@@ -27,18 +27,19 @@ export interface SuccessResponse<T> {
   result: T
 }
 
-export function createRequest(baseURL: string, defaultOptions: RequestInit) {
+export function createRequest(
+  baseURL: string,
+  defaultOptions: RequestInit = {}
+) {
   const request = async <T>(
     path: string,
     params?: URLSearchParamsInit,
     options?: RequestInit
   ) => {
-    const pa = toURLSearchParams(params ?? {})
     const url =
       path.startsWith('http://') || path.startsWith('https://')
-        ? joinURL(path, '', pa)
-        : joinURL(baseURL, path, pa)
-
+        ? joinURL(path, '', params)
+        : joinURL(baseURL, path, params)
     const headers = new Headers(defaultOptions.headers)
     new Headers(options?.headers).forEach((value, key) =>
       headers.set(key, value)
@@ -50,12 +51,12 @@ export function createRequest(baseURL: string, defaultOptions: RequestInit) {
     }
     const resp = await fetch(url, { ...defaultOptions, ...options, headers })
     const { status } = resp
-    const body =
-      resp.headers.get('Content-Type') === CBOR_MIME_TYPE
-        ? mapToObj(decodeCBOR(new Uint8Array(await resp.arrayBuffer())))
-        : resp.headers.get('Content-Type')?.startsWith(JSON_MIME_TYPE)
-          ? await resp.json()
-          : await resp.text()
+    const ct = resp.headers.get('Content-Type') || ''
+    const body = ct.startsWith(CBOR_MIME_TYPE)
+      ? decode(new Uint8Array(await resp.arrayBuffer()))
+      : ct.startsWith(JSON_MIME_TYPE)
+        ? await resp.json()
+        : await resp.text()
     if (resp.ok) {
       return body as T
     } else {
@@ -127,18 +128,17 @@ export function createRequest(baseURL: string, defaultOptions: RequestInit) {
 
 export function createCborRequest(
   baseURL: string,
-  defaultOptions: RequestInit
+  defaultOptions: RequestInit = {}
 ) {
   const request = async <T>(
     path: string,
     params?: URLSearchParamsInit,
     options?: RequestInit
   ) => {
-    const pa = toURLSearchParams(params ?? {})
     const url =
       path.startsWith('http://') || path.startsWith('https://')
-        ? joinURL(path, '', pa)
-        : joinURL(baseURL, path, pa)
+        ? joinURL(path, '', params)
+        : joinURL(baseURL, path, params)
 
     const headers = new Headers(defaultOptions.headers)
     new Headers(options?.headers).forEach((value, key) =>
@@ -151,12 +151,12 @@ export function createCborRequest(
     }
     const resp = await fetch(url, { ...defaultOptions, ...options, headers })
     const { status } = resp
-    const body =
-      resp.headers.get('Content-Type') === CBOR_MIME_TYPE
-        ? mapToObj(decodeCBOR(new Uint8Array(await resp.arrayBuffer())))
-        : resp.headers.get('Content-Type')?.startsWith(JSON_MIME_TYPE)
-          ? await resp.json()
-          : await resp.text()
+    const ct = resp.headers.get('Content-Type') || ''
+    const body = ct.startsWith(CBOR_MIME_TYPE)
+      ? decode(new Uint8Array(await resp.arrayBuffer()))
+      : ct.startsWith(JSON_MIME_TYPE)
+        ? await resp.json()
+        : await resp.text()
     if (resp.ok) {
       return body as T
     } else {
@@ -183,7 +183,7 @@ export function createCborRequest(
   ) => {
     return request<T>(path, undefined, {
       method: RequestMethod.POST,
-      body: body ? (encodeCBOR(body) as BufferSource) : null,
+      body: body ? (encode(body, rfc8949EncodeOptions) as BufferSource) : null,
       headers: { 'Content-Type': CBOR_MIME_TYPE },
       signal
     })
@@ -195,7 +195,7 @@ export function createCborRequest(
   ) => {
     return request<T>(path, undefined, {
       method: RequestMethod.PUT,
-      body: body ? (encodeCBOR(body) as BufferSource) : null,
+      body: body ? (encode(body, rfc8949EncodeOptions) as BufferSource) : null,
       headers: { 'Content-Type': CBOR_MIME_TYPE },
       signal
     })
@@ -207,7 +207,7 @@ export function createCborRequest(
   ) => {
     return request<T>(path, undefined, {
       method: RequestMethod.PATCH,
-      body: body ? (encodeCBOR(body) as BufferSource) : null,
+      body: body ? (encode(body, rfc8949EncodeOptions) as BufferSource) : null,
       headers: { 'Content-Type': CBOR_MIME_TYPE },
       signal
     })

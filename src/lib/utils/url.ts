@@ -12,8 +12,8 @@ export function joinURL(
 ) {
   const url = new URL(baseURL)
   if (path) {
-    if (!url.pathname.endsWith('/')) url.pathname += '/'
-    if (path.startsWith('/')) path = path.slice(1)
+    if (url.pathname.endsWith('/')) url.pathname = url.pathname.slice(0, -1)
+    if (!path.startsWith('/')) path = '/' + path
     url.pathname += path
   }
 
