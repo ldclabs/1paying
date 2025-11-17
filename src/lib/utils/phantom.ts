@@ -1,4 +1,4 @@
-import { ed25519, x25519 } from '@noble/curves/ed25519'
+import { ed25519 } from '@noble/curves/ed25519'
 import { randomBytes } from '@noble/hashes/utils'
 import { encode, rfc8949EncodeOptions } from 'cborg'
 import { bytesToBase64Url } from '@ldclabs/cose-ts/utils'
@@ -10,6 +10,7 @@ import { VersionedTransaction, Transaction } from '@solana/web3.js'
 const APP_URL = 'https://1pay.ing'
 const PHANTOM_ENDPOINT = 'https://phantom.app/ul/v1'
 const API_ENDPOINT = 'https://api.1pay.ing/phantom'
+const CALLBACK_ENDPOINT = 'https://1pay.ing/callback/phantom'
 
 type RelayStateInfo = {
   _updatedAt: number
@@ -29,9 +30,9 @@ export class PhantomDeeplink {
 
   #sk: Uint8Array
   #pk: Uint8Array
-  #xk: Uint8Array
   #pubkey: string
-  #xpubkey: string
+  #naclKeyPair: nacl.BoxKeyPair
+  #naclPubkey: string
   #api
   #sharedSecret: Uint8Array | null = null
   #phantomXpubkey: string = ''
@@ -47,9 +48,9 @@ export class PhantomDeeplink {
     instance.#phantomXpubkey = state.phantomXpubkey
     instance.#session = state.session
     instance.#svmAddress = state.svmAddress
-    instance.#sharedSecret = x25519.getSharedSecret(
-      instance.#sk,
-      bs58.decode(state.phantomXpubkey)
+    instance.#sharedSecret = nacl.box.before(
+      bs58.decode(state.phantomXpubkey),
+      instance.#naclKeyPair.secretKey
     )
     return instance
   }
@@ -60,23 +61,23 @@ export class PhantomDeeplink {
   ) {
     this.#sk = secret
     this.#pk = ed25519.getPublicKey(this.#sk)
-    this.#xk = x25519.getPublicKey(this.#sk)
     this.#pubkey = bytesToBase64Url(this.#pk)
-    this.#xpubkey = bs58.encode(this.#xk)
+    this.#naclKeyPair = nacl.box.keyPair.fromSecretKey(this.#sk)
+    this.#naclPubkey = bs58.encode(this.#naclKeyPair.publicKey)
     this.#api = createCborRequest(`${API_ENDPOINT}/${this.#pubkey}`)
     this.cluster = cluster
   }
 
-  get isConnected(): boolean {
+  get address(): string {
+    return this.#svmAddress
+  }
+
+  isConnected(): boolean {
     return (
       this.#sharedSecret != null &&
       this.#session != '' &&
       this.#svmAddress != ''
     )
-  }
-
-  get address(): string {
-    return this.#svmAddress
   }
 
   toState(): PhantomDeeplinkState {
@@ -89,30 +90,29 @@ export class PhantomDeeplink {
     }
   }
 
-  async connect(): Promise<void> {
-    if (this.isConnected) {
-      return
-    }
-
-    const { phantom_encryption_public_key, nonce, data } = await this.#call<{
+  connect(): Promise<void> {
+    return this.#call<{
       phantom_encryption_public_key: string
       nonce: string
       data: string
-    }>('connect', { app_url: APP_URL, cluster: this.cluster })
-    this.#phantomXpubkey = phantom_encryption_public_key
-    this.#sharedSecret = x25519.getSharedSecret(
-      this.#sk,
-      bs58.decode(phantom_encryption_public_key)
+    }>('connect', { app_url: APP_URL, cluster: this.cluster }).then(
+      async ({ phantom_encryption_public_key, data, nonce }) => {
+        this.#phantomXpubkey = phantom_encryption_public_key
+        this.#sharedSecret = nacl.box.before(
+          bs58.decode(phantom_encryption_public_key),
+          this.#naclKeyPair.secretKey
+        )
+        const { public_key, session } = this.#decrypt<{
+          public_key: string
+          session: string
+        }>(data, nonce)
+        this.#session = session
+        this.#svmAddress = public_key
+      }
     )
-    const { public_key, session } = this.#decrypt<{
-      public_key: string
-      session: string
-    }>(data, nonce)
-    this.#session = session
-    this.#svmAddress = public_key
   }
 
-  async signTransaction(
+  signTransaction(
     transaction: VersionedTransaction | Transaction
   ): Promise<VersionedTransaction | Transaction> {
     const isVersioned = transaction instanceof VersionedTransaction
@@ -125,23 +125,25 @@ export class PhantomDeeplink {
       }),
       _nonce
     )
-    const { nonce, data } = await this.#call<{
+    return this.#call<{
       nonce: string
       data: string
-    }>('signTransaction', { nonce: bs58.encode(_nonce), payload })
+    }>('signTransaction', { nonce: bs58.encode(_nonce), payload }).then(
+      async ({ nonce, data }) => {
+        const { transaction: signedTransaction } = this.#decrypt<{
+          transaction: string
+        }>(data, nonce)
+        bytes = bs58.decode(signedTransaction)
+        if (isVersioned) {
+          return VersionedTransaction.deserialize(bytes)
+        }
 
-    const { transaction: signedTransaction } = this.#decrypt<{
-      transaction: string
-    }>(data, nonce)
-    bytes = bs58.decode(signedTransaction)
-    if (isVersioned) {
-      return VersionedTransaction.deserialize(bytes)
-    }
-
-    return Transaction.from(bytes)
+        return Transaction.from(bytes)
+      }
+    )
   }
 
-  async signMessage(message: string | Uint8Array): Promise<{
+  signMessage(message: string | Uint8Array): Promise<{
     signature: Uint8Array
     publicKey: string
   }> {
@@ -149,24 +151,26 @@ export class PhantomDeeplink {
     const payload = this.#encrypt(
       JSON.stringify({
         message: bs58.encode(toBytes(message)),
-        session: this.#session,
-        display: 'utf8'
+        session: this.#session
       }),
       _nonce
     )
-    const { nonce, data } = await this.#call<{
+
+    return this.#call<{
       nonce: string
       data: string
-    }>('signMessage', { nonce: bs58.encode(_nonce), payload })
+    }>('signMessage', { nonce: bs58.encode(_nonce), payload }).then(
+      async ({ nonce, data }) => {
+        const { signature } = this.#decrypt<{
+          signature: string
+        }>(data, nonce)
 
-    const { signature } = this.#decrypt<{
-      signature: string
-    }>(data, nonce)
-
-    return {
-      signature: bs58.decode(signature),
-      publicKey: this.#svmAddress
-    }
+        return {
+          signature: bs58.decode(signature),
+          publicKey: this.#svmAddress
+        }
+      }
+    )
   }
 
   async #tryInitState(): Promise<void> {
@@ -183,39 +187,59 @@ export class PhantomDeeplink {
     }
   }
 
-  async #call<T>(method: string, params: Record<string, any>): Promise<T> {
+  #call<T>(method: string, params: Record<string, any>): Promise<T> {
     let attempt = 0
     const startTime = Date.now()
     const timeoutMs = 3 * 60 * 1000
 
-    await this.#tryInitState()
     const ps = new URLSearchParams({
-      dapp_encryption_public_key: this.#xpubkey,
-      redirect_link: `${API_ENDPOINT}/${this.#pubkey}/${method}/set`,
+      dapp_encryption_public_key: this.#naclPubkey,
+      redirect_link: `${CALLBACK_ENDPOINT}/${this.#pubkey}/${method}`,
       ...params
     })
-    const url = `${PHANTOM_ENDPOINT}/${method}?${ps.toString()}`
-    window.open(url, 'PhantomDeeplink')
 
-    // Initial delay to allow Phantom processing to start
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-    while (true) {
-      attempt += 1
+    // 确保 window.open 在用户点击事件的同步调用栈内被触发，以避免被浏览器拦截
+    window.open(
+      `${PHANTOM_ENDPOINT}/${method}?${ps.toString()}`,
+      'PhantomDeeplinkWindow'
+    )
 
-      try {
-        const { result } = await this.#api.get<{ result: T & RelayStateInfo }>(
-          `/${method}`
-        )
-        this.#stateExpiresAt = result._expiresAt
-        return result
-      } catch {
-        if (Date.now() - startTime > timeoutMs) {
-          throw new Error('Timeout waiting for payment payload')
+    return this.#tryInitState().then(async () => {
+      // Initial delay to allow Phantom processing to start
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+      while (true) {
+        attempt += 1
+
+        try {
+          const { result } = await this.#api.get<{
+            result: T &
+              RelayStateInfo & { errorCode?: string; errorMessage?: string }
+          }>(`/${method}`)
+          // console.log(
+          //   `Phantom deeplink ${method} attempt #${attempt} succeeded`,
+          //   result
+          // )
+          this.#stateExpiresAt = result._expiresAt
+          if (result.errorCode || result.errorMessage) {
+            throw result
+          }
+
+          return result
+        } catch (err: any) {
+          if (err.errorCode || err.errorMessage) {
+            throw new Error(
+              `Phantom deeplink ${method} error: ${err.errorCode} ${err.errorMessage}`
+            )
+          }
+
+          if (Date.now() - startTime > timeoutMs) {
+            throw new Error('Timeout waiting for payment payload')
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 2000))
         }
-
-        await new Promise((resolve) => setTimeout(resolve, 2000))
       }
-    }
+    })
   }
 
   #encrypt(data: string | Uint8Array, nonce: Uint8Array): string {
@@ -259,5 +283,3 @@ export class PhantomDeeplink {
 function toBytes(data: string | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : Buffer.from(data, 'utf8')
 }
-
-export const deeplinkPhantom = new PhantomDeeplink()

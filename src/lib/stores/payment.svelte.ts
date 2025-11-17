@@ -21,6 +21,7 @@ import {
   signMessage
 } from '@ldclabs/ic-auth'
 import { authStore } from './auth.svelte'
+import { type VersionedTransaction } from '@solana/web3.js'
 
 const API_ENDPOINT = 'https://api.1pay.ing'
 
@@ -146,30 +147,35 @@ class PaymentStore extends EventTarget {
     throw new Error(`Unsupported network: ${token.network}`)
   }
 
-  async buildX402Request(
+  buildX402Request(
     info: PaymentInfo,
-    x402Version: number
+    x402Version: number,
+    solTransaction?: VersionedTransaction
   ): Promise<TransactionResult<string>> {
-    try {
-      switch (info.payment.network) {
-        case 'icp':
-          return await this.#icpBuildX402Request(info, x402Version)
-        case 'solana':
-        case 'solana-devnet':
-          return await this.#solBuildX402Request(info, x402Version)
-        case 'base':
-        case 'base-sepolia':
-          return await this.#baseBuildX402Request(info, x402Version)
-        default:
-          return {
-            status: 'error',
-            error: {
-              code: 0,
-              message: `Unsupported network: ${info.payment.network}`
-            }
+    let promise: Promise<TransactionResult<string>>
+    switch (info.payment.network) {
+      case 'icp':
+        promise = this.#icpBuildX402Request(info, x402Version)
+        break
+      case 'solana':
+      case 'solana-devnet':
+        promise = this.#solBuildX402Request(info, x402Version, solTransaction)
+        break
+      case 'base':
+      case 'base-sepolia':
+        promise = this.#baseBuildX402Request(info, x402Version)
+        break
+      default:
+        return Promise.resolve({
+          status: 'error',
+          error: {
+            code: 0,
+            message: `Unsupported network: ${info.payment.network}`
           }
-      }
-    } catch (err) {
+        })
+    }
+
+    return promise.catch((err) => {
       return {
         status: 'error',
         error: {
@@ -177,7 +183,7 @@ class PaymentStore extends EventTarget {
           message: errMessage(err)
         }
       }
-    }
+    })
   }
 
   async getProfile(): Promise<UserProfile> {
@@ -353,9 +359,27 @@ class PaymentStore extends EventTarget {
     }
   }
 
-  async #solBuildX402Request(
+  async solBuildX402Transaction(
+    info: PaymentInfo
+  ): Promise<VersionedTransaction> {
+    const rpc =
+      info.payment.network === 'solana' ? this.#svmRpc : this.#svmdevRpc
+    const signer = authStore.svmSigner
+    if (!signer) {
+      throw new Error('SVM signer is not available')
+    }
+    return await rpc.createTransaction(
+      this.#identity.svmAddress!,
+      info.payment,
+      info.token!.decimals,
+      info.token!.programId!
+    )
+  }
+
+  #solBuildX402Request(
     info: PaymentInfo,
-    x402Version: number
+    x402Version: number,
+    solTransaction?: VersionedTransaction
   ): Promise<TransactionResult<string>> {
     const rpc =
       info.payment.network === 'solana' ? this.#svmRpc : this.#svmdevRpc
@@ -363,33 +387,43 @@ class PaymentStore extends EventTarget {
     if (!signer) {
       throw new Error('SVM signer is not available')
     }
-    const payload = await rpc.createAndSignPayment(
-      signer,
-      this.#identity.svmAddress!,
-      x402Version,
-      info.payment,
-      info.token!.decimals,
-      info.token!.programId!
-    )
+    const promise = solTransaction
+      ? rpc.signPayment(
+          signer,
+          x402Version,
+          info.payment.scheme,
+          info.payment.network,
+          solTransaction
+        )
+      : rpc.createAndSignPayment(
+          signer,
+          this.#identity.svmAddress!,
+          x402Version,
+          info.payment,
+          info.token!.decimals,
+          info.token!.programId!
+        )
 
-    return {
-      status: 'completed',
-      result: Buffer.from(JSON.stringify(payload)).toString('base64'),
-      log: {
-        x402Version: x402Version,
-        network: info.payment.network,
-        scheme: info.payment.scheme,
-        payer: this.#identity.svmAddress!,
-        payTo: info.payment.payTo,
-        asset: info.payment.asset,
-        resource: info.payment.resource,
-        description: info.payment.description,
-        amountRequired: info.payment.maxAmountRequired,
-        amountPaid: info.payment.maxAmountRequired,
-        txStatus: 'pending',
-        signedAt: Date.now()
+    return promise.then(async (payload) => {
+      return {
+        status: 'completed',
+        result: Buffer.from(JSON.stringify(payload)).toString('base64'),
+        log: {
+          x402Version: x402Version,
+          network: info.payment.network,
+          scheme: info.payment.scheme,
+          payer: this.#identity.svmAddress!,
+          payTo: info.payment.payTo,
+          asset: info.payment.asset,
+          resource: info.payment.resource,
+          description: info.payment.description,
+          amountRequired: info.payment.maxAmountRequired,
+          amountPaid: info.payment.maxAmountRequired,
+          txStatus: 'pending',
+          signedAt: Date.now()
+        }
       }
-    }
+    })
   }
 
   async #baseBuildX402Request(

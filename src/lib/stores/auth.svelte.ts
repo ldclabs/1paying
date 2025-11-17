@@ -21,12 +21,18 @@ import {
   Ed25519PublicKey
 } from '@dfinity/identity'
 import { hexToBytes } from '@noble/hashes/utils'
-import { AddressType, BrowserSDK } from '@phantom/browser-sdk'
+import {
+  AddressType,
+  BrowserSDK,
+  type WalletAddress
+} from '@phantom/browser-sdk'
 import { paymentStore } from './payment.svelte'
 import { KVStore } from '$lib/utils/store'
 import { PhantomDeeplink, type PhantomDeeplinkState } from '$lib/utils/phantom'
 import { type SvmSigner } from '$lib/utils/svmrpc'
 import { type EvmSigner } from '$lib/utils/evmrpc'
+import { type AuthClient } from '@dfinity/auth-client'
+import { type SignInResponse } from '$lib/canisters/signin'
 
 const DOMAIN = '1pay.ing'
 const IDENTITY_PROVIDER = IS_LOCAL
@@ -40,16 +46,38 @@ const EVM_NETWORKS = ['base', 'base-sepolia']
 const signInAPI = new SignInAPI(SIGNIN_CANISTER_ID)
 
 const authClientPromise = createAuthClient()
+let authClient: AuthClient | null = null
+authClientPromise.then((client) => {
+  authClient = client
+})
 
 const globalKV = new KVStore(DOMAIN, 1, [['State'], ['Users']])
 
-const phantomSdk = new BrowserSDK({
+export const EventLogin = 'Login'
+
+export const hasPhantomSDK =
+  typeof window !== 'undefined' &&
+  'phantom' in window &&
+  (window as any).phantom?.solana != null
+
+let phantomSdk = new BrowserSDK({
   providerType: 'injected',
   addressTypes: [AddressType.solana, AddressType.ethereum]
 })
 let phantomDeeplink = new PhantomDeeplink()
 
-export const EventLogin = 'Login'
+export interface SignInWithParams {
+  domain: string
+  address: string
+  now: bigint
+  message: string
+}
+
+export interface SignInWithResponse {
+  svmAddress: string
+  evmAddress: string
+  signInResponse: SignInResponse
+}
 
 class AuthStore extends EventTarget {
   static async init() {
@@ -57,15 +85,24 @@ class AuthStore extends EventTarget {
     if (IS_LOCAL) {
       await Promise.all([dynAgent.fetchRootKey(), dynAgent.syncTime()])
     }
-    const authClient = await authClientPromise
+    await authClientPromise
     let supportNetworks = [...ICP_NETWORKS]
     let identity: IdentityEx | null
+
+    const phantomDeeplinkState = await globalKV.get<PhantomDeeplinkState>(
+      'State',
+      'PhantomDeeplink'
+    )
+    if (phantomDeeplinkState && phantomDeeplinkState.phantomXpubkey) {
+      phantomDeeplink = PhantomDeeplink.fromState(phantomDeeplinkState)
+    }
+
     identity = await loadMyIdentity()
     if (!identity) {
-      identity = await loadIdentity(authClient)
+      identity = await loadIdentity(authClient!)
     } else {
       // verify wallet connection
-      const ok = await AuthStore.#checkIdentity(identity)
+      const ok = await checkIdentity(identity)
       if (!ok) {
         console.warn('Stored identity does not match connected wallet')
         identity = null
@@ -78,15 +115,6 @@ class AuthStore extends EventTarget {
           supportNetworks = [...supportNetworks, ...EVM_NETWORKS]
         }
       }
-    }
-
-    const phantomDeeplinkState = await globalKV.get<PhantomDeeplinkState>(
-      'State',
-      'PhantomDeeplink'
-    )
-
-    if (phantomDeeplinkState) {
-      phantomDeeplink = PhantomDeeplink.fromState(phantomDeeplinkState)
     }
 
     if (identity) {
@@ -103,32 +131,6 @@ class AuthStore extends EventTarget {
     authStore.dispatchEvent(
       new CustomEvent(EventLogin, { detail: identity.getPrincipal().toText() })
     )
-  }
-
-  static async #checkIdentity(identity: IdentityEx) {
-    // verify wallet connection
-    const { addresses } = await phantomSdk.connect({
-      provider: 'injected'
-    })
-    if (addresses.length === 0) {
-      return false
-    }
-
-    for (const { addressType, address } of addresses) {
-      switch (addressType) {
-        case AddressType.solana:
-          if (identity.svmAddress !== address) {
-            return false
-          }
-          break
-        case AddressType.ethereum:
-          if (identity.evmAddress !== address) {
-            return false
-          }
-          break
-      }
-    }
-    return true
   }
 
   #identity = $state<IdentityEx>(anonymousIdentity)
@@ -154,9 +156,13 @@ class AuthStore extends EventTarget {
     return this.#supportNetworks
   }
 
+  get phantomConnected() {
+    return phantomDeeplink.isConnected() || phantomSdk.isConnected()
+  }
+
   get svmSigner(): SvmSigner | null {
     if (this.#identity.svmAddress) {
-      if (phantomDeeplink.isConnected) {
+      if (phantomDeeplink.isConnected()) {
         return phantomDeeplink
       }
       return phantomSdk.solana
@@ -171,105 +177,143 @@ class AuthStore extends EventTarget {
     return null
   }
 
-  signIn(identityProvider = IDENTITY_PROVIDER) {
-    return new Promise<void>(async (resolve, reject) => {
-      // Important: authClientPromise should be resolved here
-      // https://ffan0811.medium.com/window-open-returns-null-in-safari-and-firefox-after-allowing-pop-up-on-the-browser-4e4e45e7d926
-      const authClient = await authClientPromise
-      await authClient.login({
-        maxTimeToLive: BigInt(EXPIRATION_MS) * 1000000n,
-        identityProvider,
-        onSuccess: (msg) => {
-          const authnMethod = msg.authnMethod
-          const authnOrigin = location.origin
-          console.log(
-            `Login successful using ${authnMethod} from ${authnOrigin}`
-          )
+  async ready() {
+    if (!authClient) {
+      await authClientPromise
+    }
+  }
 
-          const identity = new IdentityEx(
-            authClient.getIdentity(),
-            Date.now() + EXPIRATION_MS
-          )
+  signIn(identityProvider = IDENTITY_PROVIDER): Promise<null> {
+    if (!authClient) {
+      return Promise.reject(new Error('AuthClient not initialized'))
+    }
 
-          AuthStore.#login(identity, [...ICP_NETWORKS])
-          resolve()
-        },
-        onError: (err) => {
-          console.error(err)
-          reject(err)
-        },
-        windowOpenerFeatures: popupCenter({
-          width: 576,
-          height: 625
-        })
+    let resolve: (rt: any) => void, reject: (reason?: any) => void
+    const promise = new Promise<null>(async (_resolve, _reject) => {
+      resolve = _resolve
+      reject = _reject
+    })
+
+    // 确保 window.open 在用户点击事件的同步调用栈内被触发，以避免被浏览器拦截
+    // Important: authClientPromise should be resolved here
+    // https://ffan0811.medium.com/window-open-returns-null-in-safari-and-firefox-after-allowing-pop-up-on-the-browser-4e4e45e7d926
+    authClient.login({
+      maxTimeToLive: BigInt(EXPIRATION_MS) * 1000000n,
+      identityProvider,
+      onSuccess: (msg) => {
+        const authnMethod = msg.authnMethod
+        const authnOrigin = location.origin
+        console.log(`Login successful using ${authnMethod} from ${authnOrigin}`)
+
+        const identity = new IdentityEx(
+          authClient!.getIdentity(),
+          Date.now() + EXPIRATION_MS
+        )
+
+        AuthStore.#login(identity, [...ICP_NETWORKS])
+        resolve(null)
+      },
+      onError: (err) => {
+        console.error(err)
+        reject(err)
+      },
+      windowOpenerFeatures: popupCenter({
+        width: 576,
+        height: 625
       })
     })
+
+    return promise
   }
 
-  signInWithPhantom() {
-    return new Promise<void>(async (resolve, reject) => {
-      const sessionKey = Ed25519KeyIdentity.generate()
-      const sessionPubkey = new Uint8Array(
-        (sessionKey.getPublicKey() as Ed25519PublicKey).toDer()
-      )
-      try {
-        const isPhantomAvailable = await BrowserSDK.isPhantomInstalled(1000)
-        const { svmAddress, evmAddress, signInResponse } = isPhantomAvailable
-          ? await this.#signInWithPhantomExtension(sessionKey)
-          : await this.#signInWithPhantomDeeplink(sessionKey)
-        const signedDelegation = await signInAPI.getDelegation(
-          signInResponse.seed as Uint8Array,
-          sessionPubkey,
-          signInResponse.expiration
-        )
+  signInWithPhantom(
+    params: SignInWithParams | null = null
+  ): Promise<SignInWithParams | null> {
+    if (!authClient) {
+      return Promise.reject(new Error('AuthClient not initialized'))
+    }
 
-        const chain = DelegationChain.fromDelegations(
-          [
-            {
-              delegation: new Delegation(
-                toUint8Array(signedDelegation.delegation.pubkey),
-                signedDelegation.delegation.expiration,
-                signedDelegation.delegation.targets[0]
-              ),
-              signature: toUint8Array(
-                signedDelegation.signature,
-                '__signature__'
-              ) as Signature
-            }
-          ],
-          toUint8Array(
-            signInResponse.user_key,
-            '__derEncodedPublicKey__'
-          ) as DerEncodedPublicKey
-        )
-        const identity = await setMyIdentity({
-          identity: sessionKey,
-          chain,
-          svmAddress,
-          evmAddress,
-          backedBy: 'Phantom'
-        })
-        let supportNetworks = [...ICP_NETWORKS]
-        if (identity.svmAddress) {
-          supportNetworks = [...supportNetworks, ...SVM_NETWORKS]
-        }
-        if (identity.evmAddress) {
-          supportNetworks = [...supportNetworks, ...EVM_NETWORKS]
-        }
+    const sessionKey = Ed25519KeyIdentity.generate()
+    const sessionPubkey = new Uint8Array(
+      (sessionKey.getPublicKey() as Ed25519PublicKey).toDer()
+    )
+    const promise = hasPhantomSDK
+      ? this.#signInWithPhantomExtension(sessionKey)
+      : this.#signInWithPhantomDeeplink(sessionKey, params)
 
-        AuthStore.#login(identity, supportNetworks)
-        resolve()
-      } catch (err: any) {
-        console.error('Connect wallet failed:', err, err.data)
-        reject(err)
+    return promise.then(async (res) => {
+      const { svmAddress, evmAddress, signInResponse } =
+        res as SignInWithResponse
+      if (!signInResponse) {
+        return res as SignInWithParams
       }
+
+      const signedDelegation = await signInAPI.getDelegation(
+        signInResponse.seed as Uint8Array,
+        sessionPubkey,
+        signInResponse.expiration
+      )
+
+      const chain = DelegationChain.fromDelegations(
+        [
+          {
+            delegation: new Delegation(
+              toUint8Array(signedDelegation.delegation.pubkey),
+              signedDelegation.delegation.expiration,
+              signedDelegation.delegation.targets[0]
+            ),
+            signature: toUint8Array(
+              signedDelegation.signature,
+              '__signature__'
+            ) as Signature
+          }
+        ],
+        toUint8Array(
+          signInResponse.user_key,
+          '__derEncodedPublicKey__'
+        ) as DerEncodedPublicKey
+      )
+      const identity = await setMyIdentity({
+        identity: sessionKey,
+        chain,
+        svmAddress,
+        evmAddress,
+        backedBy: 'Phantom'
+      })
+      let supportNetworks = [...ICP_NETWORKS]
+      if (identity.svmAddress) {
+        supportNetworks = [...supportNetworks, ...SVM_NETWORKS]
+      }
+      if (identity.evmAddress) {
+        supportNetworks = [...supportNetworks, ...EVM_NETWORKS]
+      }
+
+      AuthStore.#login(identity, supportNetworks)
+
+      return null
     })
   }
 
-  async #signInWithPhantomExtension(sessionKey: Ed25519KeyIdentity) {
-    const { addresses } = await phantomSdk.connect({
-      provider: 'injected'
-    })
+  async getSignInWithSolanaMessage(): Promise<SignInWithParams> {
+    const now = BigInt(Date.now())
+    const address = phantomDeeplink.address
+    const message = await signInAPI.getSignInWithSolanaMessage(
+      DOMAIN,
+      address,
+      now
+    )
+    return {
+      domain: DOMAIN,
+      address,
+      message,
+      now
+    }
+  }
+
+  async #signInWithPhantomExtension(
+    sessionKey: Ed25519KeyIdentity
+  ): Promise<SignInWithResponse> {
+    const addresses = await tryConnectPhantomSDK()
     if (addresses.length === 0) {
       throw new Error('No addresses returned from Phantom wallet')
     }
@@ -364,38 +408,45 @@ class AuthStore extends EventTarget {
     }
   }
 
-  async #signInWithPhantomDeeplink(sessionKey: Ed25519KeyIdentity) {
-    await phantomDeeplink.connect()
-    await globalKV.set('State', phantomDeeplink.toState(), 'PhantomDeeplink')
-    const nowMs = BigInt(Date.now())
-    const svmAddress = phantomDeeplink.address
-    const message = await signInAPI.getSignInWithSolanaMessage(
-      DOMAIN,
-      svmAddress,
-      nowMs
-    )
-    const { signature, publicKey } = await phantomDeeplink.signMessage(message)
-    if (publicKey !== svmAddress) {
-      throw new Error('Signed public key does not match the address')
+  #signInWithPhantomDeeplink(
+    sessionKey: Ed25519KeyIdentity,
+    params: SignInWithParams | null = null
+  ): Promise<SignInWithParams | SignInWithResponse> {
+    if (params) {
+      const promise = phantomDeeplink.signMessage(params.message)
+      return promise.then(async ({ signature, publicKey }) => {
+        if (publicKey !== params.address) {
+          throw new Error('Signed public key does not match the address')
+        }
+        const sessionPubkey = new Uint8Array(
+          (sessionKey.getPublicKey() as Ed25519PublicKey).toDer()
+        )
+        const sessionSig = await sessionKey.sign(signature)
+        const signInResponse = await signInAPI.signInWithSolana(
+          DOMAIN,
+          publicKey,
+          params.now,
+          params.message,
+          signature,
+          sessionPubkey,
+          sessionSig
+        )
+        return {
+          svmAddress: params.address,
+          evmAddress: '', // deeplink only supports Solana for now
+          signInResponse
+        }
+      })
     }
-    const sessionPubkey = new Uint8Array(
-      (sessionKey.getPublicKey() as Ed25519PublicKey).toDer()
-    )
-    const sessionSig = await sessionKey.sign(signature)
-    const signInResponse = await signInAPI.signInWithSolana(
-      DOMAIN,
-      publicKey,
-      nowMs,
-      message,
-      signature,
-      sessionPubkey,
-      sessionSig
-    )
-    return {
-      svmAddress,
-      evmAddress: '', // deeplink only supports Solana for now
-      signInResponse
-    }
+
+    const promise = !phantomDeeplink.isConnected()
+      ? phantomDeeplink.connect()
+      : Promise.resolve()
+
+    return promise.then(async () => {
+      await globalKV.set('State', phantomDeeplink.toState(), 'PhantomDeeplink')
+      return await this.getSignInWithSolanaMessage()
+    })
   }
 
   async logout(url: string = '/app') {
@@ -404,12 +455,11 @@ class AuthStore extends EventTarget {
     dynAgent.setIdentity(anonymousIdentity)
     phantomSdk.disconnect()
 
-    const authClient = await authClientPromise
     await removeMyIdentity()
     phantomDeeplink = new PhantomDeeplink()
     await globalKV.delete('State', 'PhantomDeeplink')
 
-    await authClient.logout()
+    await authClient!.logout()
     url && window.location.assign(url) // force reload to clear all auth state!!
   }
 }
@@ -419,3 +469,65 @@ export const authStore = new AuthStore()
 AuthStore.init().catch((err) => {
   console.error('Failed to initialize AuthStore', err)
 })
+
+async function tryConnectPhantomSDK(): Promise<WalletAddress[]> {
+  if (!hasPhantomSDK) return []
+
+  phantomSdk = new BrowserSDK({
+    providerType: 'injected',
+    addressTypes: [AddressType.solana, AddressType.ethereum]
+  })
+  try {
+    const { addresses } = await phantomSdk.connect({
+      provider: 'injected'
+    })
+    return addresses
+  } catch {
+    phantomSdk = new BrowserSDK({
+      providerType: 'injected',
+      addressTypes: [AddressType.solana]
+    })
+    const { addresses } = await phantomSdk.connect({
+      provider: 'injected'
+    })
+    return addresses
+  }
+}
+
+async function checkIdentity(identity: IdentityEx) {
+  if (hasPhantomSDK) {
+    const addresses = await tryConnectPhantomSDK()
+
+    if (addresses.length === 0) {
+      return false
+    }
+    for (const { addressType, address } of addresses) {
+      switch (addressType) {
+        case AddressType.solana:
+          if (identity.svmAddress !== address) {
+            return false
+          }
+          break
+        case AddressType.ethereum:
+          if (identity.evmAddress !== address) {
+            return false
+          }
+          break
+      }
+    }
+
+    return true
+  }
+
+  if (phantomDeeplink.isConnected()) {
+    if (identity.svmAddress !== phantomDeeplink.address) {
+      return false
+    }
+    if (identity.evmAddress) {
+      return false
+    }
+    return true
+  }
+
+  return identity.svmAddress == '' && identity.evmAddress == ''
+}

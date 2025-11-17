@@ -127,6 +127,53 @@ export class SvmRpc {
     return rt
   }
 
+  async createTransaction(
+    payer: string,
+    paymentRequirements: PaymentRequirements,
+    decimals: number,
+    programAddress: string
+  ): Promise<VersionedTransaction> {
+    const transactionMessage = await this.#createTransferTransactionMessage(
+      payer,
+      paymentRequirements,
+      decimals,
+      programAddress
+    )
+
+    // return payment payload
+    return new VersionedTransaction(transactionMessage.compileToV0Message())
+  }
+
+  signPayment(
+    signer: SvmSigner,
+    x402Version: number,
+    scheme: string,
+    network: string,
+    transaction: VersionedTransaction
+  ): Promise<PaymentPayload<SvmPayload>> {
+    // 基于 Deeplink 的 signTransaction 必须确保 window.open 在用户点击事件的同步调用栈内被触发，以避免被浏览器拦截
+    return signer
+      .signTransaction(transaction)
+      .then(async (signedTransaction) => {
+        const bytes = signedTransaction.serialize({
+          requireAllSignatures: false
+        })
+        // encode signed transaction to base64
+        const base64EncodedWireTransaction =
+          Buffer.from(bytes).toString('base64')
+
+        // return payment payload
+        return {
+          x402Version,
+          scheme,
+          network,
+          payload: {
+            transaction: base64EncodedWireTransaction
+          }
+        }
+      })
+  }
+
   async createAndSignPayment(
     signer: SvmSigner,
     payer: string,

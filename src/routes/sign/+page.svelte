@@ -17,7 +17,7 @@
 
   function onSignInModal() {
     showModal({
-      title: 'Connect wallet',
+      title: 'Sign In With',
       component: ConnectWalletModal
     })
   }
@@ -33,7 +33,7 @@
 
 <div class="flex min-h-screen flex-col bg-white text-slate-900">
   <Header>
-    <div class="flex items-center gap-4">
+    <div class="flex items-center sm:gap-4">
       {#if isAuthenticated}
         <button
           type="button"

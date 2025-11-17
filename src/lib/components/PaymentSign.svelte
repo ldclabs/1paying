@@ -16,6 +16,7 @@
   import { onMount, tick } from 'svelte'
   import QuillPenAiLine from '../icons/quill-pen-ai-line.svelte'
   import ConnectWalletModal from './ConnectWalletModal.svelte'
+  import { type VersionedTransaction } from '@solana/web3.js'
 
   const myIcpAddress = $derived(authStore.identity.getPrincipal().toText())
   const isAuthenticated = $derived(authStore.identity.isAuthenticated)
@@ -31,38 +32,11 @@
   let x402Version = $state(1)
   let tx = $state<string>('')
   let accepts = $state<PaymentInfo[]>([])
+  let selected = $state<PaymentInfo | null>(null)
+  let selectedAddress = $state<string>('')
+  let solTransaction = $state<VersionedTransaction | undefined>(undefined)
 
-  const selected = $derived(
-    selectedIndex >= 0 && selectedIndex < accepts.length
-      ? accepts[selectedIndex]
-      : null
-  )
-  const selectedAddress = $derived.by(() => {
-    if (!isAuthenticated || !selected) return ''
-    switch (selected.payment.network) {
-      case 'solana':
-        return `${pruneAddress(authStore.identity.svmAddress)} on Solana`
-      case 'solana-devnet':
-        return `${pruneAddress(authStore.identity.svmAddress)} on Solana Devnet`
-      case 'icp':
-        return `${pruneAddress(myIcpAddress)} on Internet Computer`
-      default:
-        return ''
-    }
-  })
   const success = $derived(signFinished && !signFailed)
-
-  $effect(() => {
-    accepts.sort((a, b) => {
-      if (a.isDisabled !== b.isDisabled) {
-        return a.isDisabled ? 1 : -1
-      }
-      return 0
-    })
-    tick().then(() => {
-      selectedIndex = 0
-    })
-  })
 
   function onSignInModal() {
     showModal({
@@ -75,7 +49,52 @@
     if (index < 0 || index >= accepts.length) {
       return
     }
-    selectedIndex = index
+
+    selectPaymentInfo(index)
+  }
+
+  async function selectPaymentInfo(index: number) {
+    if (index >= 0 && index < accepts.length) {
+      if (selectedIndex === index) {
+        return
+      }
+
+      selectedIndex = index
+      selected = accepts[index] as PaymentInfo
+
+      if (!isAuthenticated) return
+
+      solTransaction = undefined
+      selectedAddress = ''
+      switch (selected.payment.network) {
+        case 'solana':
+          isLoading = true
+          selectedAddress = `${pruneAddress(authStore.identity.svmAddress)} on Solana`
+          solTransaction = await paymentStore.solBuildX402Transaction(selected)
+          isLoading = false
+          break
+        case 'solana-devnet':
+          isLoading = true
+          selectedAddress = `${pruneAddress(authStore.identity.svmAddress)} on Solana Devnet`
+          solTransaction = await paymentStore.solBuildX402Transaction(selected)
+          isLoading = false
+          break
+        case 'icp':
+          selectedAddress = `${pruneAddress(myIcpAddress)} on Internet Computer`
+          break
+        case 'base':
+          selectedAddress = `${pruneAddress(authStore.identity.evmAddress)} on Base`
+          break
+        case 'base-sepolia':
+          selectedAddress = `${pruneAddress(authStore.identity.evmAddress)} on Base Sepolia`
+          break
+      }
+    } else {
+      selectedIndex = -1
+      selected = null
+      selectedAddress = ''
+      solTransaction = undefined
+    }
   }
 
   function handlePay() {
@@ -84,8 +103,14 @@
     }
 
     isLoading = true
+    const promise = paymentStore.buildX402Request(
+      selected,
+      x402Version,
+      solTransaction
+    )
+
     toastRun(async () => {
-      const result = await paymentStore.buildX402Request(selected, x402Version)
+      const result = await promise
       await paymentStore.submitTransaction(tx, result)
       signFinished = true
       if (result.error) {
@@ -97,29 +122,38 @@
     })
   }
 
-  function fetchMyBalance() {
+  async function fetchMyBalance() {
     for (const info of accepts) {
       switch (info.payment.network) {
         case 'solana':
         case 'solana-devnet':
-          info.fetchBalance(paymentStore, authStore.identity.svmAddress)
+          await info.fetchBalance(paymentStore, authStore.identity.svmAddress)
           break
         case 'base':
         case 'base-sepolia':
-          info.fetchBalance(paymentStore, authStore.identity.evmAddress)
+          await info.fetchBalance(paymentStore, authStore.identity.evmAddress)
           break
         case 'icp':
-          info.fetchBalance(
+          await info.fetchBalance(
             paymentStore,
             authStore.identity.getPrincipal().toText()
           )
           break
       }
     }
+
+    accepts.sort((a, b) => {
+      if (a.isDisabled !== b.isDisabled) {
+        return a.isDisabled ? 1 : -1
+      }
+      return 0
+    })
+    await tick()
+    await selectPaymentInfo(0)
   }
 
   onMount(() => {
-    return toastRun((_signal, abortingQue) => {
+    return toastRun(async (_signal, abortingQue) => {
       const url = new URL(page.url)
       const { txid, paymentRequirementsResponse } =
         parseAndVerifyPaymentMessage(url.hash.slice(1))
@@ -127,14 +161,16 @@
       x402Version = paymentRequirementsResponse.x402Version
       accepts = selectedPaymentRequirements(paymentRequirementsResponse.accepts)
       responseError = paymentRequirementsResponse.error
-      selectedIndex = accepts.length > 0 ? 0 : -1
-      authStore.addEventListener(EventLogin, fetchMyBalance)
-      isReady = true
+      await tick()
+      await selectPaymentInfo(0)
 
+      authStore.addEventListener(EventLogin, fetchMyBalance)
       abortingQue.push(() => {
         authStore.removeEventListener(EventLogin, fetchMyBalance)
       })
-    }).abort
+    }).finally(() => {
+      isReady = true
+    })
   })
 </script>
 
@@ -149,7 +185,7 @@
             >x402 v{x402Version}</span
           >
           {#if success}
-            <div class="m-auto mt-6 text-green-600 *:size-10"
+            <div class="m-auto mt-4 text-green-600 *:size-10"
               ><QuillPenAiLine /></div
             >
             <h1
@@ -157,7 +193,7 @@
             >
               Payment Signed Successfully!
             </h1>
-            <p class="mb-10 text-center text-slate-600"
+            <p class="text-center text-slate-600"
               >You can close this tab and return to your app.</p
             >
           {:else}
@@ -185,7 +221,8 @@
                   <PaymentRequirementCard
                     {info}
                     selected={index === selectedIndex}
-                    disabled={signFinished ||
+                    disabled={isLoading ||
+                      signFinished ||
                       !authStore.supportNetworks.includes(info.payment.network)}
                     onSelect={() => handleSelectRequirement(index)}
                   />
