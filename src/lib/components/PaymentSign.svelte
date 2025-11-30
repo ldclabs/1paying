@@ -27,7 +27,7 @@
   let isSigningIn = $state<boolean>(false)
   let signFinished = $state(false)
   let signFailed = $state('')
-  let selectedIndex = $state(-1)
+  let selectedId = $state('')
   let responseError = $state('')
   let x402Version = $state(1)
   let tx = $state<string>('')
@@ -45,55 +45,50 @@
     })
   }
 
-  function handleSelectRequirement(index: number) {
-    if (index < 0 || index >= accepts.length) {
+  async function handleSelectRequirement(id: string) {
+    if (id && selectedId === id) {
       return
     }
 
-    selectPaymentInfo(index)
-  }
-
-  async function selectPaymentInfo(index: number) {
-    if (index >= 0 && index < accepts.length) {
-      if (selectedIndex === index) {
-        return
-      }
-
-      selectedIndex = index
-      selected = accepts[index] as PaymentInfo
-
-      if (!isAuthenticated) return
-
-      solTransaction = undefined
-      selectedAddress = ''
-      switch (selected.payment.network) {
-        case 'solana':
-          isLoading = true
-          selectedAddress = `${pruneAddress(authStore.identity.svmAddress)} on Solana`
-          solTransaction = await paymentStore.solBuildX402Transaction(selected)
-          isLoading = false
-          break
-        case 'solana-devnet':
-          isLoading = true
-          selectedAddress = `${pruneAddress(authStore.identity.svmAddress)} on Solana Devnet`
-          solTransaction = await paymentStore.solBuildX402Transaction(selected)
-          isLoading = false
-          break
-        case 'icp':
-          selectedAddress = `${pruneAddress(myIcpAddress)} on Internet Computer`
-          break
-        case 'base':
-          selectedAddress = `${pruneAddress(authStore.identity.evmAddress)} on Base`
-          break
-        case 'base-sepolia':
-          selectedAddress = `${pruneAddress(authStore.identity.evmAddress)} on Base Sepolia`
-          break
-      }
-    } else {
-      selectedIndex = -1
+    const item = id
+      ? accepts.find((info) => info.id === id)
+      : accepts.find((info) => !info.isDisabled)
+    if (!item) {
+      selectedId = ''
       selected = null
       selectedAddress = ''
       solTransaction = undefined
+      return
+    }
+
+    selectedId = item.id
+    selected = item
+    if (!isAuthenticated) return
+
+    solTransaction = undefined
+    selectedAddress = ''
+    switch (selected.payment.network) {
+      case 'solana':
+        isLoading = true
+        selectedAddress = `${pruneAddress(authStore.identity.svmAddress)} on Solana`
+        solTransaction = await paymentStore.solBuildX402Transaction(selected)
+        isLoading = false
+        break
+      case 'solana-devnet':
+        isLoading = true
+        selectedAddress = `${pruneAddress(authStore.identity.svmAddress)} on Solana Devnet`
+        solTransaction = await paymentStore.solBuildX402Transaction(selected)
+        isLoading = false
+        break
+      case 'icp':
+        selectedAddress = `${pruneAddress(myIcpAddress)} on Internet Computer`
+        break
+      case 'base':
+        selectedAddress = `${pruneAddress(authStore.identity.evmAddress)} on Base`
+        break
+      case 'base-sepolia':
+        selectedAddress = `${pruneAddress(authStore.identity.evmAddress)} on Base Sepolia`
+        break
     }
   }
 
@@ -124,6 +119,8 @@
 
   async function fetchMyBalance() {
     for (const info of accepts) {
+      info.supportNetworks = authStore.supportNetworks
+
       switch (info.payment.network) {
         case 'solana':
         case 'solana-devnet':
@@ -148,21 +145,26 @@
       }
       return 0
     })
-    await tick()
-    await selectPaymentInfo(0)
+    if (!selected && accepts.length > 0) {
+      await tick()
+      await handleSelectRequirement('')
+    }
   }
 
   onMount(() => {
     return toastRun(async (_signal, abortingQue) => {
       const url = new URL(page.url)
       const { txid, paymentRequirementsResponse } =
-        parseAndVerifyPaymentMessage(url.hash.slice(1))
+        await parseAndVerifyPaymentMessage(url.hash.slice(1))
       tx = txid
       x402Version = paymentRequirementsResponse.x402Version
-      accepts = selectedPaymentRequirements(paymentRequirementsResponse.accepts)
+      accepts = selectedPaymentRequirements(
+        paymentRequirementsResponse.accepts,
+        authStore.supportNetworks
+      )
       responseError = paymentRequirementsResponse.error
       await tick()
-      await selectPaymentInfo(0)
+      await handleSelectRequirement('')
 
       authStore.addEventListener(EventLogin, fetchMyBalance)
       abortingQue.push(() => {
@@ -216,15 +218,15 @@
         {#if accepts.length > 0}
           <div class="m-auto w-fit max-w-full rounded-xl p-0 shadow-inner">
             <div class="flex snap-x snap-mandatory gap-4 overflow-x-auto p-4">
-              {#each accepts as info, index}
+              {#each accepts as info (info.id)}
                 <div class="snap-center">
                   <PaymentRequirementCard
                     {info}
-                    selected={index === selectedIndex}
+                    selected={info.id === selectedId}
                     disabled={isLoading ||
                       signFinished ||
                       !authStore.supportNetworks.includes(info.payment.network)}
-                    onSelect={() => handleSelectRequirement(index)}
+                    onSelect={handleSelectRequirement}
                   />
                 </div>
               {/each}

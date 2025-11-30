@@ -1,7 +1,7 @@
 import { ed25519 } from '@noble/curves/ed25519'
 import { randomBytes } from '@noble/hashes/utils'
 import { encode, rfc8949EncodeOptions } from 'cborg'
-import { bytesToBase64Url } from '@ldclabs/cose-ts/utils'
+import { bytesToBase64Url } from '@ldclabs/1paying-kit'
 import { createCborRequest } from './fetcher'
 import bs58 from 'bs58'
 import nacl from 'tweetnacl'

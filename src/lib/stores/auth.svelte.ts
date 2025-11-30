@@ -189,7 +189,7 @@ class AuthStore extends EventTarget {
     }
 
     let resolve: (rt: any) => void, reject: (reason?: any) => void
-    const promise = new Promise<null>(async (_resolve, _reject) => {
+    const promise = new Promise<null>((_resolve, _reject) => {
       resolve = _resolve
       reject = _reject
     })

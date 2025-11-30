@@ -27,8 +27,7 @@ export default defineConfig({
       }
     }
   },
-  server: {
-  },
+  server: {},
   plugins: [
     environment('all', { prefix: 'CANISTER_' }),
     environment('all', { prefix: 'DFX_' }),

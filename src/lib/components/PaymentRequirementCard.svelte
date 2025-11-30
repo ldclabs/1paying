@@ -15,7 +15,7 @@
     info: PaymentInfo
     selected?: boolean
     disabled?: boolean
-    onSelect?: () => void
+    onSelect?: (id: string) => void
   } = $props()
 
   const isAuthenticated = $derived(authStore.identity.isAuthenticated)
@@ -27,7 +27,7 @@
     if (isDisabled) {
       return
     }
-    onSelect?.()
+    onSelect?.(info.id)
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -36,20 +36,21 @@
     }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      onSelect?.()
+      onSelect?.(info.id)
     }
   }
 </script>
 
 <div
   role="radio"
+  id={info.id}
   aria-checked={selected}
   tabindex={isDisabled ? -1 : 0}
   class={`group flex h-full w-2xs max-w-sm flex-col rounded-xl border bg-white/80 p-4 text-left shadow-sm backdrop-blur transition sm:w-lg ${
     selected
       ? 'border-sky-400/50 ring-2 ring-sky-200'
       : 'border-slate-200 hover:border-sky-300 hover:shadow-lg'
-  } ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+  } ${isDisabled ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
   onclick={handleSelect}
   onkeydown={handleKeydown}
 >

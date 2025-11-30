@@ -1,5 +1,3 @@
-import { decodeCBOR, encodeCBOR } from '@ldclabs/cose-ts/utils'
-
 export type URLSearchParamsInit =
   | URLSearchParams
   | string
@@ -55,30 +53,6 @@ export function toURLSearchParams(params: URLSearchParamsInit) {
       .filter((kv) => kv[1] != null)
       .map(([k, v]) => [k, String(v)])
   )
-}
-
-export function createBlobURL(object: unknown) {
-  return btoa(
-    URL.createObjectURL(
-      new Blob([encodeCBOR(object) as BufferSource], {
-        type: 'application/cbor'
-      })
-    )
-  )
-}
-
-export async function parseBlobURL<T>(url: string) {
-  try {
-    url = atob(url)
-    if (!isBlobURL(url)) return null
-    const resp = await fetch(url)
-    const blob = await resp.blob()
-    if (blob.type !== 'application/cbor') return null
-    const buffer = await blob.arrayBuffer()
-    return decodeCBOR(new Uint8Array(buffer)) as T
-  } catch {
-    return null
-  }
 }
 
 export function revokeBlobURL(url: string) {
