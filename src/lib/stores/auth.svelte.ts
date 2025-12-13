@@ -482,7 +482,8 @@ async function tryConnectPhantomSDK(): Promise<WalletAddress[]> {
       provider: 'injected'
     })
     return addresses
-  } catch {
+  } catch (err) {
+    console.warn('Failed to connect to Phantom extension:', err)
     phantomSdk = new BrowserSDK({
       providers: ['injected'],
       addressTypes: [AddressType.solana]
@@ -496,6 +497,7 @@ async function tryConnectPhantomSDK(): Promise<WalletAddress[]> {
 
 async function checkIdentity(identity: IdentityEx) {
   if (hasPhantomSDK) {
+    await new Promise((resolve) => setTimeout(resolve, 1000)) // wait for injected sdk to be ready
     const addresses = await tryConnectPhantomSDK()
 
     if (addresses.length === 0) {

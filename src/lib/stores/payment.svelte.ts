@@ -66,7 +66,7 @@ class PaymentStore extends EventTarget {
       'https://base-mainnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X'
     ])
     this.#baseSepoliaRpc = new EvmRpc([
-      'https://base-testnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X'
+      'https://base-sepolia.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X'
     ])
   }
 
