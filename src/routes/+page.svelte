@@ -11,213 +11,190 @@
 
   const navLinks = [
     { label: 'App', href: '#app' },
-    { label: 'Why x402', href: '#benefits' },
-    { label: 'Developers', href: '#developers' },
-    { label: 'Tokenomics', href: '#tokenomics' },
+    { label: 'Benefits', href: '#benefits' },
+    { label: 'Merchants', href: '#merchants' },
+    { label: 'Token', href: '#tokenomics' },
     { label: 'Contact', href: '#contact' }
   ]
 
   const heroChecklist = [
-    'Your single wallet for the entire x402 economy',
-    'Human-readable intents, one-tap approvals',
-    'Seamlessly bridge Web2 accounts with Web3 wallets'
+    'Pay per article, per minute, or per request',
+    'No monthly subscriptions or credit card forms',
+    'One secure wallet for the entire web'
   ]
 
   const userBenefits = [
     {
-      title: 'True Micropayments',
+      title: 'Freedom from Subscriptions',
       description:
-        'Pay as little as $0.001 with near-zero fees. Unlock per-article content, per-call APIs, or per-token AI services. Value finally matches consumption.'
+        'Why pay $15/month when you only want to read one article? With 1Pay.ing, you pay pennies for exactly what you consume. No waste, no commitments.'
     },
     {
-      title: 'Flow, Not Friction',
+      title: 'One Wallet, Zero Friction',
       description:
-        'Verify once, consume instantly. x402 settles in the background, so you skip wait times and stay in the moment.'
+        'Forget creating accounts and entering credit card details for every site. Your 1Pay.ing wallet is your universal pass to the premium web.'
     },
     {
-      title: 'Global & Permissionless',
+      title: 'Global & Private',
       description:
-        'Wherever the internet goes, 1Pay.ing follows. All you need is a wallet—no banks, no borders, no gatekeepers.'
+        "Works anywhere in the world. You don't need a bank account, just an internet connection. You control your data and your funds."
     },
     {
-      title: 'Trust by Design',
+      title: 'Fair for Everyone',
       description:
-        'Open protocols, transparent signing, and a checkout flow you can actually read. You control your keys; we just deliver the intent.'
+        'Creators get paid instantly for their work. You pay less by only buying what you need. We removed the middlemen and the fees.'
     }
   ]
 
   const howItWorks = [
     {
-      title: 'Generate Pay URL',
+      title: '1. Discover',
       description:
-        'When your API returns HTTP 402, pass the response to payingKit.tryGetPayUrl(). We generate a secure, verifiable checkout link.'
+        'Find premium content, AI tools, or APIs you want to use. Look for the "Pay with 1Pay.ing" option.'
     },
     {
-      title: 'User Signs',
+      title: '2. One-Click Pay',
       description:
-        'Route users to 1Pay.ing. We handle wallet discovery and present a clear, human-readable signature request. No more confusing JSON content.'
+        'No login forms. The 1Pay.ing wallet pops up with the exact price (e.g., $0.02). Just tap "Approve".'
     },
     {
-      title: 'Resume Instantly',
+      title: '3. Instant Access',
       description:
-        'payingKit.waitForPaymentPayload() resolves with the signed proof. Retry your protected resource with the X-PAYMENT header and deliver value.'
+        "The payment settles in milliseconds. Your content unlocks immediately. It's faster than loading a credit card page."
     }
   ]
 
   const codeSample = `
 <pre style="font-family:monospace;color: rgb(201, 209, 217); background-color: rgb(13, 17, 23); font-weight: 400; "><span style="color: rgb(255, 123, 114); font-weight: 400;">import</span> { payingKit } <span style="color: rgb(255, 123, 114); font-weight: 400;">from</span> <span style="color: rgb(165, 214, 255); font-weight: 400;">'@ldclabs/1paying-kit'</span>
 
-<span style="color: rgb(255, 123, 114); font-weight: 400;">async</span> <span style="color: rgb(255, 123, 114); font-weight: 400;">function</span> <span style="color: rgb(210, 168, 255); font-weight: 400;">fetchData</span>(<span style="color: rgb(201, 209, 217); font-weight: 400;"></span>) {
-  <span style="color: rgb(255, 123, 114); font-weight: 400;">let</span> response = <span style="color: rgb(255, 123, 114); font-weight: 400;">await</span> <span style="color: rgb(210, 168, 255); font-weight: 400;">fetch</span>(<span style="color: rgb(165, 214, 255); font-weight: 400;">'https://api.example.com/premium-data'</span>)
+<span style="color: rgb(139, 148, 158); font-weight: 400;">// 1. Check if the resource requires payment</span>
+<span style="color: rgb(255, 123, 114); font-weight: 400;">const</span> { payUrl, txid } = <span style="color: rgb(255, 123, 114); font-weight: 400;">await</span> payingKit.<span style="color: rgb(210, 168, 255); font-weight: 400;">tryGetPayUrl</span>(response)
 
-  <span style="color: rgb(139, 148, 158); font-weight: 400;">// Check if payment is required</span>
-  <span style="color: rgb(255, 123, 114); font-weight: 400;">const</span> {payUrl, txid} = <span style="color: rgb(255, 123, 114); font-weight: 400;">await</span> payingKit.<span style="color: rgb(210, 168, 255); font-weight: 400;">tryGetPayUrl</span>(response)
-  <span style="color: rgb(255, 123, 114); font-weight: 400;">if</span> (payUrl) {
-    <span style="color: rgb(139, 148, 158); font-weight: 400;">// Payment is required, handle it with the kit</span>
-    <span style="color: rgb(255, 123, 114); font-weight: 400;">console</span>.<span style="color: rgb(210, 168, 255); font-weight: 400;">log</span>(<span style="color: rgb(165, 214, 255); font-weight: 400;">\`Please complete the payment at: <span style="color: rgb(201, 209, 217); font-weight: 400;">\${payUrl}</span>\`</span>)
-    <span style="color: rgb(255, 123, 114); font-weight: 400;">window</span>.<span style="color: rgb(210, 168, 255); font-weight: 400;">open</span>(payUrl, <span style="color: rgb(165, 214, 255); font-weight: 400;">'1Pay.ing'</span>) <span style="color: rgb(139, 148, 158); font-weight: 400;">// Redirect user to sign the payment</span>
+<span style="color: rgb(255, 123, 114); font-weight: 400;">if</span> (payUrl) {
+  <span style="color: rgb(139, 148, 158); font-weight: 400;">// 2. Redirect user to 1Pay.ing to sign</span>
+  <span style="color: rgb(255, 123, 114); font-weight: 400;">window</span>.<span style="color: rgb(210, 168, 255); font-weight: 400;">open</span>(payUrl, <span style="color: rgb(165, 214, 255); font-weight: 400;">'1Pay.ing'</span>)
 
-    <span style="color: rgb(255, 123, 114); font-weight: 400;">try</span> {
-      <span style="color: rgb(255, 123, 114); font-weight: 400;">const</span> payload = <span style="color: rgb(255, 123, 114); font-weight: 400;">await</span> payingKit.<span style="color: rgb(210, 168, 255); font-weight: 400;">waitForPaymentPayload</span>(txid, {
-        <span style="color: rgb(121, 192, 255); font-weight: 400;">onprogress</span>: <span style="color: rgb(201, 209, 217); font-weight: 400;">(<span style="color: rgb(201, 209, 217); font-weight: 400;">state</span>) =&gt;</span> {
-          <span style="color: rgb(255, 123, 114); font-weight: 400;">console</span>.<span style="color: rgb(210, 168, 255); font-weight: 400;">log</span>(<span style="color: rgb(165, 214, 255); font-weight: 400;">\`Payment status: <span style="color: rgb(201, 209, 217); font-weight: 400;">\${state.status}</span>, attempt: <span style="color: rgb(201, 209, 217); font-weight: 400;">\${state.attempt}</span>\`</span>)
-        },
-      })
-      <span style="color: rgb(255, 123, 114); font-weight: 400;">console</span>.<span style="color: rgb(210, 168, 255); font-weight: 400;">log</span>(<span style="color: rgb(165, 214, 255); font-weight: 400;">'Payment successful! Received x402 PaymentPayload:'</span>, payload)
+  <span style="color: rgb(139, 148, 158); font-weight: 400;">// 3. Wait for payment proof</span>
+  <span style="color: rgb(255, 123, 114); font-weight: 400;">const</span> proof = <span style="color: rgb(255, 123, 114); font-weight: 400;">await</span> payingKit.<span style="color: rgb(210, 168, 255); font-weight: 400;">waitForPaymentPayload</span>(txid)
 
-      <span style="color: rgb(139, 148, 158); font-weight: 400;">// Now you can retry the original request with the payment payload</span>
-      <span style="color: rgb(139, 148, 158); font-weight: 400;">// typically in an 'Authorization' or 'X-Payment' header.</span>
-      response = <span style="color: rgb(255, 123, 114); font-weight: 400;">await</span> <span style="color: rgb(210, 168, 255); font-weight: 400;">fetch</span>(<span style="color: rgb(165, 214, 255); font-weight: 400;">'https://api.example.com/premium-data'</span>, {
-        <span style="color: rgb(121, 192, 255); font-weight: 400;">headers</span>: {
-          <span style="color: rgb(165, 214, 255); font-weight: 400;">'X-PAYMENT'</span>: payload,
-        },
-      })
-    } <span style="color: rgb(255, 123, 114); font-weight: 400;">catch</span> (error) {
-      <span style="color: rgb(255, 123, 114); font-weight: 400;">console</span>.<span style="color: rgb(210, 168, 255); font-weight: 400;">error</span>(<span style="color: rgb(165, 214, 255); font-weight: 400;">'Payment failed or timed out:'</span>, error)
-      <span style="color: rgb(255, 123, 114); font-weight: 400;">throw</span> error
-    }
-  }
-
-  <span style="color: rgb(139, 148, 158); font-weight: 400;">// Process the successful response</span>
-  <span style="color: rgb(255, 123, 114); font-weight: 400;">const</span> data = <span style="color: rgb(255, 123, 114); font-weight: 400;">await</span> response.<span style="color: rgb(210, 168, 255); font-weight: 400;">json</span>()
-  <span style="color: rgb(255, 123, 114); font-weight: 400;">console</span>.<span style="color: rgb(210, 168, 255); font-weight: 400;">log</span>(<span style="color: rgb(165, 214, 255); font-weight: 400;">'Data received:'</span>, data)
+  <span style="color: rgb(139, 148, 158); font-weight: 400;">// 4. Retry request with proof</span>
+  <span style="color: rgb(255, 123, 114); font-weight: 400;">await</span> <span style="color: rgb(210, 168, 255); font-weight: 400;">fetch</span>(url, { <span style="color: rgb(121, 192, 255); font-weight: 400;">headers</span>: { <span style="color: rgb(165, 214, 255); font-weight: 400;">'PAYMENT-SIGNATURE'</span>: proof } })
 }</pre>
 `
 
   const developerHighlights = [
     {
-      badge: 'Universal',
-      title: 'One SDK, Every Wallet',
+      badge: 'Easy',
+      title: 'Drop-in Monetization',
       description:
-        'One integration covers Phantom, MetaMask, WalletConnect, and emerging smart wallets. No custom bridges required.'
+        "Add a revenue stream to your API, blog, or app in minutes. Our SDK handles the complex crypto parts so you don't have to."
     },
     {
-      badge: 'DX',
-      title: 'Simple, Typed API',
+      badge: 'Universal',
+      title: 'Any Wallet, Any Chain',
       description:
-        'A minimal, promise-based, and fully typed SDK. Drop it into any modern framework and start charging within minutes.'
+        'Your users can pay with their favorite wallets (Phantom, MetaMask, etc.). We handle the compatibility.'
     },
     {
       badge: 'Secure',
-      title: 'Audited & Open-Source',
+      title: 'Non-Custodial',
       description:
-        'Non-custodial, open-source SDK plus an audited payment gateway. We never touch user keys—we only coordinate signing requests.'
+        'We never hold your funds. Payments go directly from the user to you (or your smart contract). Secure by design.'
+    },
+    {
+      badge: 'Flexible',
+      title: 'Micro to Macro',
+      description:
+        'Charge $0.001 per API call or $100 for a digital asset. The protocol supports any amount with near-zero fees.'
     },
     {
       badge: 'Identity',
-      title: 'Decoupled by Design',
+      title: 'Web2 Friendly',
       description:
-        'Our session-based architecture keeps your Web2 accounts intact while attaching verifiable proof of payment from any wallet.'
+        'Keep your existing user accounts. 1Pay.ing simply attaches a payment proof to their requests.'
     },
     {
-      badge: 'Future-Proof',
-      title: 'For x402 and Beyond',
+      badge: 'Growth',
+      title: 'Better Conversion',
       description:
-        "Launch on Solana today, expand to other chains tomorrow. We track the x402 spec and upcoming payment protocols so you don't have to."
-    },
-    {
-      badge: 'UX',
-      title: 'A Checkout That Converts',
-      description:
-        'Polished visuals and a flow that builds trust. Turn curious users into paying customers without the steep drop-off of classic Web3 UX.'
+        'Users are more likely to pay $0.50 once than subscribe for $10/month. Lower the barrier to entry and increase your revenue.'
     }
   ]
 
   const tokenFlywheels = [
     {
-      title: 'Proof-of-Adoption',
+      title: 'Earn by Integrating',
       description:
-        'Rewards builders who integrate the 1Pay.ing Kit, multiplying our reach with every new HTTP 402 touchpoint.'
+        'Merchants and creators who add 1Pay.ing to their apps earn rewards for every transaction they facilitate. The more you build, the more you earn.'
     },
     {
-      title: 'Proof-of-Usage',
+      title: 'Earn by Spending',
       description:
-        'Returns value to wallet users who transact through 1Pay.ing, anchoring daily payment activity with meaningful incentives.'
+        'Users get "cashback" in PAY tokens for using the network. It pays to be an active part of the ecosystem.'
     }
   ]
 
   const tokenUtilities = [
     {
-      badge: 'B2D',
-      title: 'Empowering Developers',
+      badge: 'Merchants',
+      title: 'For Merchants',
       points: [
-        'Integrate-to-Earn rewards adopters of the 1Pay.ing Kit on every qualified transaction they facilitate.',
-        'Staking PAY unlocks premium services like facilitator gas sponsorship, enterprise SLAs, and advanced analytics.'
+        'Earn Rewards: Get extra PAY tokens automatically for every payment you process.',
+        'Premium Features: Stake PAY to access advanced analytics and gas sponsorship for your users.'
       ]
     },
     {
-      badge: 'B2C',
-      title: 'Empowering Users',
+      badge: 'Users',
+      title: 'For Everyone',
       points: [
-        'Pay-to-Earn returns a percentage of every x402 payment as PAY rebates, the Web3 equivalent of cashback.',
-        'Stake-to-Earn keeps rebates productive with in-wallet yield, turning the wallet into a lightweight asset hub.'
+        'Pay-to-Earn: Receive PAY rebates on your transaction fees.',
+        'Governance: Have a say in how the platform evolves and where the treasury funds go.'
       ]
     },
     {
-      badge: 'Shared',
-      title: 'Ecosystem Alignment',
+      badge: 'Ecosystem',
+      title: 'Shared Success',
       points: [
-        'Governance via vePAY lets the community tune incentives, treasury allocations, and the roadmap.',
-        'Privilege tiers unlock enhanced privacy, higher rebate multipliers, and upcoming wallet features.'
+        'The token aligns incentives between those who build the tools and those who use them.',
+        'A portion of fees buys back and burns PAY, making the token scarcer over time.'
       ]
     }
   ]
 
   const tokenAllocations = [
     {
-      label: 'Ecosystem & Community Rewards',
+      label: 'Community Rewards',
       value: '40% • 400M PAY',
       percentage: 40,
       description:
-        'Split between Developer Incentives (20%) and User Incentives (20%) to fuel Integrate-to-Earn and Pay-to-Earn programs.'
+        'Incentives for merchants and users to grow the network (Earn by Integrating & Pay-to-Earn).'
     },
     {
       label: 'Public Sale & Liquidity',
       value: '20% • 200M PAY',
       percentage: 20,
       description:
-        '10% allocated to an LBP for fair price discovery and treasury formation, 10% paired to seed deep DEX liquidity.'
+        'Ensuring there is enough liquidity for everyone to buy and sell PAY easily.'
     },
     {
-      label: 'Core Team & Future Contributors',
+      label: 'Core Team',
       value: '18% • 180M PAY',
       percentage: 18,
       description:
-        '3-year vesting with a 6-month cliff keeps builders aligned with long-term protocol growth.'
+        'Vested over 3 years to ensure the team is committed to long-term success.'
     },
     {
-      label: 'Strategic Partners & Advisors',
+      label: 'Partners & Advisors',
       value: '12% • 120M PAY',
       percentage: 12,
-      description:
-        'Vested allocations onboard key distribution, compliance, and infrastructure partners.'
+      description: 'For strategic partners who help us expand into new markets.'
     },
     {
-      label: 'Treasury / Foundation',
+      label: 'Treasury',
       value: '10% • 100M PAY',
       percentage: 10,
       description:
-        'Supports operations, audits, marketing, and legal under community-supervised stewardship.'
+        'Funds for operations, marketing, and legal to keep the platform running smoothly.'
     }
   ]
 
@@ -225,7 +202,7 @@
     label: 'Total Supply',
     value: '1B PAY',
     description:
-      'Fixed at genesis on Solana to power the 1Pay.ing network and its value-native economy.'
+      'Fixed supply. No inflation. Designed to power the value-native economy.'
   }
 
   const tokenAllocationPalette = [
@@ -293,23 +270,23 @@
 
   const tokenLaunchPlan = [
     {
-      title: 'Liquidity Bootstrapping Pool (LBP)',
+      title: 'Fair Launch',
       description:
-        'We will launch an LBP with 10% (100M PAY) on a Solana-native venue to discover price and raise $500k-$1M in capital.'
+        'We are launching with a Liquidity Bootstrapping Pool (LBP) to ensure fair price discovery for everyone.'
     },
     {
-      title: 'Liquidity Lock Commitment',
+      title: 'Locked Liquidity',
       description:
-        '100% of LBP proceeds pair with another 10% (100M PAY) to seed a major Solana DEX, with LP tokens locked for at least 36 months.'
+        'We are locking the initial liquidity for 36 months to demonstrate our long-term commitment.'
     }
   ]
 
   const tokenFlywheelLoop = [
-    'Penetration (SDK): Integrate-to-Earn incentives drive adoption of the 1Pay.ing Kit across applications, creating constant entry points.',
-    'Conversion (Wallet): New touchpoints guide users into the 1Pay.ing Wallet for readable checkouts and PAY rebates.',
-    'Retention (Incentives): Pay-to-Earn rebates and in-wallet staking deepen engagement and keep value inside the ecosystem.',
-    'Synergistic Reinforcement: A growing wallet base attracts more developers, while more integrated apps increase reasons to spend and earn.',
-    'Value Accrual: Rising TVP and daily activity translate into governance demand for PAY, closing the loop for builders and users.'
+    'Adoption: Merchants integrate 1Pay.ing to monetize their apps.',
+    'Usage: Users pay for content/services using the 1Pay.ing wallet.',
+    'Rewards: Both merchants and users earn PAY tokens for transacting.',
+    'Growth: More users attract more merchants, creating a positive loop.',
+    'Value: Increased network activity drives demand for the PAY token.'
   ]
 
   const footerColumns = [
@@ -323,22 +300,18 @@
     {
       title: 'Community',
       links: [
-        { label: 'X', href: 'https://x.com/i/communities/1988555176517513709' }
+        {
+          label: 'X (Twitter)',
+          href: 'https://x.com/i/communities/1988555176517513709'
+        }
       ]
     },
     {
-      title: 'Us',
+      title: 'Company',
       links: [
         { label: 'About Us', href: 'https://x.com/1Paying' },
         { label: 'Contact', href: 'mailto:hi@1pay.ing' }
       ]
-      // },
-      // {
-      //   title: 'Legal',
-      //   links: [
-      //     { label: 'Terms of Service', href: 'https://1pay.ing/#terms' },
-      //     { label: 'Privacy Policy', href: 'https://1pay.ing/#privacy' }
-      //   ]
     }
   ]
 
@@ -403,7 +376,7 @@
     <section
       id="app"
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-[calc(100vh-80px)] overflow-hidden lg:max-h-[1536px]"
+      class="relative min-h-[calc(100vh-80px)] overflow-hidden lg:max-h-384"
     >
       <div
         class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_60%)]"
@@ -416,17 +389,17 @@
           <span
             class="inline-flex items-center rounded-full border border-slate-100 bg-sky-50 px-4 py-1 text-xs font-semibold tracking-[0.4em] text-sky-600 uppercase"
           >
-            The Value-Native Web
+            The Future of Payments
           </span>
           <h1
             class="font-outfit text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
           >
-            The internet is paid now. Let's make it seamless.
+            Unlock the Web, <br /> One Cent at a Time.
           </h1>
           <p class="text-lg text-slate-600 sm:text-xl">
-            <span class="font-outfit font-bold text-black">1Pay.ing</span> is your
-            wallet for the x402 era. Experience instant micropayments, human-readable
-            signing, and a trusted home for every on-chain experience.
+            <span class="font-outfit font-bold text-black">1Pay.ing</span> is the
+            universal wallet for the new economy. Pay $0.01 for an article or $0.05
+            for an AI image. No subscriptions. No sign-ups. Just instant access.
           </p>
 
           <ul class="grid text-sm text-slate-600">
@@ -450,39 +423,39 @@
             <h2
               class="text-base font-semibold tracking-[0.4em] text-slate-600 uppercase"
             >
-              App Preview
+              Try It Now
             </h2>
             <PrimaryButton
               onclick={launchApp}
               isLoading={isLoadingApp}
               class="bg-green-100! px-4! py-2! font-semibold"
             >
-              <span class="text-sm text-sky-600">Launch app</span>
+              <span class="text-sm text-sky-600">Launch Wallet</span>
             </PrimaryButton>
           </div>
           <p class="mt-4 text-sm text-slate-600">
-            Connect one wallet, unlock every HTTP 402 experience. Tap to
-            approve, view receipts, and manage your payment history in one
-            place.
+            Experience the friction-free web. Connect your wallet once, and pay
+            for content across the internet with a single tap.
           </p>
           <div class="mt-6 space-y-4 text-sm text-slate-600">
             <div
               class="rounded-sm border border-slate-100 bg-white p-4 shadow-sm shadow-slate-900/5"
             >
-              <h3 class="text-sm font-semibold text-slate-900">Example Flows</h3
+              <h3 class="text-sm font-semibold text-slate-900"
+                >Imagine a web where you can:</h3
               >
               <ul class="mt-3 space-y-2">
                 <li class="flex items-center gap-2">
                   <span class="h-2 w-2 rounded-full bg-sky-500"></span>
-                  <span>Pay-per-article with immediate unlocks</span>
+                  <span>Read a premium article for $0.10</span>
                 </li>
                 <li class="flex items-center gap-2">
                   <span class="h-2 w-2 rounded-full bg-sky-500"></span>
-                  <span>Agent-to-agent streaming payments</span>
+                  <span>Generate an AI image for $0.05</span>
                 </li>
                 <li class="flex items-center gap-2">
                   <span class="h-2 w-2 rounded-full bg-sky-500"></span>
-                  <span>Per-call API billing with spending caps</span>
+                  <span>Watch a video ad-free for $0.02</span>
                 </li>
               </ul>
             </div>
@@ -494,11 +467,11 @@
               <h3
                 class="text-sm font-semibold tracking-[0.3em] text-sky-600 uppercase"
               >
-                Try It Live
+                Live Demo
               </h3>
               <p class="mt-3 text-sm text-slate-600">
-                Explore our “Buy Me a Coffee” demo powered by 1Pay.ing
-                micropayments and see frictionless HTTP 402 flows in action.
+                See how fast it is. Buy us a virtual coffee using 1Pay.ing
+                micropayments.
               </p>
               <div
                 class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
@@ -513,7 +486,7 @@
                   href="https://1paying-coffee.zensh.workers.dev/"
                   target="1PayingCoffeeDemo"
                 >
-                  Visit Demo
+                  Buy Coffee Demo
                 </a>
               </div>
             </div>
@@ -525,24 +498,24 @@
     <section
       id="benefits"
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-screen border-y border-slate-100 bg-sky-50 py-8 lg:max-h-[1536px] lg:py-24"
+      class="relative min-h-screen border-y border-slate-100 bg-sky-50 py-8 lg:max-h-384 lg:py-24"
     >
       <div use:parallax class="mx-auto max-w-6xl px-6">
         <div use:fadeIn>
           <p
             class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
-            >Why x402 Matters</p
+            >Why 1Pay.ing?</p
           >
           <h2
             class="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl"
           >
-            Pay-as-you-go for everything you read, watch, build, and automate.
+            The web was broken. We fixed it.
           </h2>
           <p class="mt-6 max-w-2xl text-base text-slate-600">
-            The x402 protocol turns payments into a native part of the web.
-            <span class="font-outfit font-bold text-black">1Pay.ing</span> makes
-            it an everyday wallet, so you can tip creators, unlock APIs, or let your
-            AI agents transact on your behalf—without subscriptions or borders.
+            Subscriptions are expensive. Ads are annoying.
+            <span class="font-outfit font-bold text-black">1Pay.ing</span> brings
+            back the original vision of the internet: a place where value flows freely
+            between creators and users.
           </p>
         </div>
         <div use:staggerChildren class="mt-12 grid gap-4 md:grid-cols-2">
@@ -559,33 +532,33 @@
     </section>
 
     <section
-      id="developers"
+      id="merchants"
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-screen py-8 lg:max-h-[1536px] lg:py-24"
+      class="relative min-h-screen py-8 lg:max-h-384 lg:py-24"
     >
       <div use:parallax class="mx-auto max-w-6xl px-6">
         <div use:fadeIn>
           <p
             class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
-            >For Developers</p
+            >For Merchants & Creators</p
           >
           <h2
             class="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl"
           >
-            Ship x402 payments without rewriting your front-end.
+            Monetize anything in minutes.
           </h2>
           <p class="mt-6 max-w-3xl text-base text-slate-600">
-            <span class="font-outfit font-bold text-black">1Pay.ing</span> packages
-            wallet detection, signature UX, and identity handshakes into a single
-            SDK. You keep your stack; we deliver a polished checkout that works across
-            every wallet and protocol.
+            Stop losing revenue to complex subscriptions. With <span
+              class="font-outfit font-bold text-black">1Pay.ing</span
+            >, you can monetize any content, tool, or service instantly. Simple
+            for you, seamless for your users.
           </p>
         </div>
         <div class="mt-12 grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
           <div use:staggerChildren>
             <h3
               class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
-              >Integration in Minutes</h3
+              >Your Customer's Journey</h3
             >
             <ol class="mt-6 space-y-4">
               {#each howItWorks as step, index}
@@ -610,11 +583,11 @@
           >
             <div
               class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
-              >Code Sample</div
+              >Integration Example</div
             >
             <p class="mt-4 text-sm text-slate-600">
-              Fully typed, promise-based, and designed to drop straight into
-              your existing fetch flow.
+              Works with your existing website or app. Just a few lines of code
+              to start accepting payments.
             </p>
             <div class="mt-4 overflow-x-auto rounded-md bg-black p-4">
               {@html codeSample}
@@ -626,18 +599,18 @@
 
     <section
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-screen bg-sky-50 py-8 lg:max-h-[1536px] lg:py-24"
+      class="relative min-h-screen bg-sky-50 py-8 lg:max-h-384 lg:py-24"
     >
       <div use:parallax class="mx-auto max-w-6xl px-6">
         <div use:fadeIn>
           <p
             class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
-            >Everything You Need</p
+            >Platform Features</p
           >
           <h2
             class="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl"
           >
-            Build a flawless payment flow without touching wallet internals.
+            Everything you need to build a paid service.
           </h2>
         </div>
         <div use:staggerChildren class="mt-12 grid gap-4 sm:grid-cols-2">
@@ -663,7 +636,7 @@
     <section
       id="tokenomics"
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-screen overflow-hidden py-8 lg:max-h-[2048px] lg:py-24"
+      class="relative min-h-screen overflow-hidden py-8 lg:max-h-400 lg:py-24"
     >
       <div
         class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_bottom,rgba(99,102,241,0.12),transparent_70%)]"
@@ -677,7 +650,7 @@
           <h2
             class="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl"
           >
-            Tokenomics for a new payment economy.
+            The fuel for the new economy.
           </h2>
           <p class="mt-6 max-w-3xl text-base text-slate-600">
             <span class="font-outfit font-bold text-black">PAY</span> (<a
@@ -692,11 +665,9 @@
               />
               <span>PAYiNG...ZBWN</span>
               <span class="*:size-4"><ArrowRightUpLine /></span>
-            </a>) is the coordination token for
-            <span class="font-outfit font-bold text-black">1Pay.ing</span>,
-            aligning users, facilitators, and the foundation to grow the x402
-            ecosystem. Supply is capped at 1 billion tokens, with emissions tied
-            to real usage and network growth.
+            </a>) is the utility token that powers
+            <span class="font-outfit font-bold text-black">1Pay.ing</span>. It
+            aligns the interests of users, developers, and the platform itself.
           </p>
         </div>
         <div use:staggerChildren class="mt-12 grid gap-4 md:grid-cols-2">
@@ -813,7 +784,7 @@
             class="rounded-sm border border-slate-100 bg-white p-8 shadow-2xl shadow-slate-900/10"
           >
             <h3 class="text-2xl font-semibold text-slate-900">
-              The PAY Flywheel
+              The Growth Cycle
             </h3>
             <ol class="mt-4 space-y-3 text-sm text-slate-600">
               {#each tokenFlywheelLoop as step, index}
@@ -840,14 +811,14 @@
         >
           <p
             class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
-            >Get Involved</p
+            >Join the Revolution</p
           >
           <h2 class="mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Ready to build the new web of value?
+            Ready to experience the future of payments?
           </h2>
           <p class="mt-6 text-base text-slate-600">
-            Start accepting x402 payments today. The next economy is
-            permissionless, instant, and waiting for you.
+            Whether you are a user, a creator, or a developer, there is a place
+            for you in the 1Pay.ing ecosystem.
           </p>
           <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <a
@@ -855,14 +826,14 @@
               href="https://github.com/ldclabs/1paying-kit"
               target="1PayingKit"
             >
-              Read the Docs
+              Start Building
             </a>
             <a
               class="inline-flex items-center justify-center rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-400 hover:bg-white/70"
               href="https://x.com/1Paying"
               target="1PayingCommunity"
             >
-              Join the Community
+              Join Community
             </a>
           </div>
         </div>
