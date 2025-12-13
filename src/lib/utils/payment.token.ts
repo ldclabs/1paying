@@ -86,7 +86,7 @@ const TOKENS: Record<string, TokenInfoEx> = {
     maxDigits: 4
   },
   'solana-devnet:4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU': {
-    name: 'USDC-devnet',
+    name: 'USDC-test',
     symbol: 'USDC',
     decimals: 6,
     fee: 0n,
@@ -111,14 +111,14 @@ const TOKENS: Record<string, TokenInfoEx> = {
     chainId: 8453,
     maxDigits: 4
   },
-  'base-sepolia:0x036CbD53842c5426634e7929541eC2318f3dCF7e': {
-    name: 'USDC-sepolia',
+  'base-testnet:0x036CbD53842c5426634e7929541eC2318f3dCF7e': {
+    name: 'USDC-test',
     symbol: 'USDC',
     decimals: 6,
     fee: 0n,
     one: 1000000n,
     logo: 'https://1pay.ing/_assets/images/usdc.webp',
-    network: 'base-sepolia',
+    network: 'base-testnet',
     address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
     chainId: 84532,
     programId: '',

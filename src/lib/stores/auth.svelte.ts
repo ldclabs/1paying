@@ -41,7 +41,7 @@ const IDENTITY_PROVIDER = IS_LOCAL
 
 const ICP_NETWORKS = ['icp']
 const SVM_NETWORKS = ['solana', 'solana-devnet']
-const EVM_NETWORKS = ['base', 'base-sepolia']
+const EVM_NETWORKS = ['base', 'base-testnet']
 
 const signInAPI = new SignInAPI(SIGNIN_CANISTER_ID)
 
@@ -61,7 +61,7 @@ export const hasPhantomSDK =
   (window as any).phantom?.solana != null
 
 let phantomSdk = new BrowserSDK({
-  providerType: 'injected',
+  providers: ['injected'],
   addressTypes: [AddressType.solana, AddressType.ethereum]
 })
 let phantomDeeplink = new PhantomDeeplink()
@@ -474,7 +474,7 @@ async function tryConnectPhantomSDK(): Promise<WalletAddress[]> {
   if (!hasPhantomSDK) return []
 
   phantomSdk = new BrowserSDK({
-    providerType: 'injected',
+    providers: ['injected'],
     addressTypes: [AddressType.solana, AddressType.ethereum]
   })
   try {
@@ -484,7 +484,7 @@ async function tryConnectPhantomSDK(): Promise<WalletAddress[]> {
     return addresses
   } catch {
     phantomSdk = new BrowserSDK({
-      providerType: 'injected',
+      providers: ['injected'],
       addressTypes: [AddressType.solana]
     })
     const { addresses } = await phantomSdk.connect({

@@ -1,8 +1,4 @@
-import {
-  type PaymentPayload,
-  type PaymentRequirements,
-  type SvmPayload
-} from '$lib/types/pay'
+import { type SvmPayload } from '$lib/types/pay'
 import {
   address,
   createSolanaRpc,
@@ -28,6 +24,7 @@ import {
   VersionedTransaction,
   type Transaction
 } from '@solana/web3.js'
+import { PaymentInfo } from './payment.svelte'
 
 const addressEncoder = getAddressEncoder()
 
@@ -129,13 +126,13 @@ export class SvmRpc {
 
   async createTransaction(
     payer: string,
-    paymentRequirements: PaymentRequirements,
+    payment: PaymentInfo,
     decimals: number,
     programAddress: string
   ): Promise<VersionedTransaction> {
     const transactionMessage = await this.#createTransferTransactionMessage(
       payer,
-      paymentRequirements,
+      payment,
       decimals,
       programAddress
     )
@@ -146,11 +143,8 @@ export class SvmRpc {
 
   signPayment(
     signer: SvmSigner,
-    x402Version: number,
-    scheme: string,
-    network: string,
     transaction: VersionedTransaction
-  ): Promise<PaymentPayload<SvmPayload>> {
+  ): Promise<SvmPayload> {
     // 基于 Deeplink 的 signTransaction 必须确保 window.open 在用户点击事件的同步调用栈内被触发，以避免被浏览器拦截
     return signer
       .signTransaction(transaction)
@@ -164,12 +158,7 @@ export class SvmRpc {
 
         // return payment payload
         return {
-          x402Version,
-          scheme,
-          network,
-          payload: {
-            transaction: base64EncodedWireTransaction
-          }
+          transaction: base64EncodedWireTransaction
         }
       })
   }
@@ -177,14 +166,13 @@ export class SvmRpc {
   async createAndSignPayment(
     signer: SvmSigner,
     payer: string,
-    x402Version: number,
-    paymentRequirements: PaymentRequirements,
+    payment: PaymentInfo,
     decimals: number,
     programAddress: string
-  ): Promise<PaymentPayload<SvmPayload>> {
+  ): Promise<SvmPayload> {
     const transactionMessage = await this.#createTransferTransactionMessage(
       payer,
-      paymentRequirements,
+      payment,
       decimals,
       programAddress
     )
@@ -198,31 +186,30 @@ export class SvmRpc {
 
     // return payment payload
     return {
-      x402Version: x402Version,
-      scheme: paymentRequirements.scheme,
-      network: paymentRequirements.network,
-      payload: {
-        transaction: base64EncodedWireTransaction
-      }
+      transaction: base64EncodedWireTransaction
     }
   }
 
   async #createTransferTransactionMessage(
     payer: string,
-    paymentRequirements: PaymentRequirements,
+    payment: PaymentInfo,
     decimals: number,
     programAddress: string
   ) {
     // create the transfer instruction
     const instructions = await this.#createAtaAndTransferInstructions(
       payer,
-      paymentRequirements,
+      payment,
       decimals,
       programAddress
     )
 
     // create tx to simulate
-    const feePayer = (paymentRequirements.extra as any)?.feePayer
+    const feePayer = payment.feePayer
+    if (!feePayer) {
+      throw new Error('feePayer is required in paymentRequirements.extra')
+    }
+
     const { value: latestBlockhash } = await this.#rpc
       .getLatestBlockhash()
       .send()
@@ -236,18 +223,14 @@ export class SvmRpc {
 
   async #createAtaAndTransferInstructions(
     payer: string,
-    paymentRequirements: PaymentRequirements,
+    payment: PaymentInfo,
     decimals: number,
     tokenProgramAddress: string
   ): Promise<TransactionInstruction[]> {
-    const { asset, payTo, extra, maxAmountRequired } = paymentRequirements
-    const feePayer = (extra as any)?.feePayer as Address
-    // feePayer is required
+    const { asset, payTo } = payment.payment
+    const feePayer = payment.feePayer
     if (!feePayer) {
-      throw new Error(
-        'feePayer is required in paymentRequirements.extra in order to set the ' +
-          'facilitator as the fee payer for the create associated token account instruction'
-      )
+      throw new Error('feePayer is required in paymentRequirements.extra')
     }
 
     const instructions: TransactionInstruction[] = []
@@ -298,7 +281,7 @@ export class SvmRpc {
         new PublicKey(asset),
         new PublicKey(destinationATA),
         new PublicKey(payer),
-        BigInt(maxAmountRequired),
+        BigInt(payment.amountRequired),
         decimals,
         [],
         new PublicKey(tokenProgramAddress)

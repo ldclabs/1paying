@@ -179,7 +179,7 @@
                   class="text-xs text-slate-500"
                   title={`Required (atomic units): ${info.log.amountRequired}`}
                 >
-                  Required {info.formatAmount(info.maxAmountRequired)}
+                  Required {info.formatAmount(info.amountRequired)}
                 </p>
               </div>
             </div>

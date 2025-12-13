@@ -7,7 +7,7 @@
   import { paymentStore } from '$lib/stores/payment.svelte.ts'
   import { toastRun } from '$lib/stores/toast.svelte'
   import PrimaryButton from '$lib/ui/PrimaryButton.svelte'
-  import { pruneAddress } from '$lib/utils/helper'
+  import { pruneAddress, pruneText } from '$lib/utils/helper'
   import {
     parseAndVerifyPaymentMessage,
     PaymentInfo,
@@ -17,6 +17,7 @@
   import QuillPenAiLine from '../icons/quill-pen-ai-line.svelte'
   import ConnectWalletModal from './ConnectWalletModal.svelte'
   import { type VersionedTransaction } from '@solana/web3.js'
+  import type { ResourceInfo } from '@ldclabs/1paying-kit'
 
   const myIcpAddress = $derived(authStore.identity.getPrincipal().toText())
   const isAuthenticated = $derived(authStore.identity.isAuthenticated)
@@ -35,6 +36,7 @@
   let selected = $state<PaymentInfo | null>(null)
   let selectedAddress = $state<string>('')
   let solTransaction = $state<VersionedTransaction | undefined>(undefined)
+  let resource = $state<ResourceInfo | null>(null)
 
   const success = $derived(signFinished && !signFailed)
 
@@ -86,7 +88,7 @@
       case 'base':
         selectedAddress = `${pruneAddress(authStore.identity.evmAddress)} on Base`
         break
-      case 'base-sepolia':
+      case 'base-testnet':
         selectedAddress = `${pruneAddress(authStore.identity.evmAddress)} on Base Sepolia`
         break
     }
@@ -98,11 +100,7 @@
     }
 
     isLoading = true
-    const promise = paymentStore.buildX402Request(
-      selected,
-      x402Version,
-      solTransaction
-    )
+    const promise = paymentStore.buildX402Request(selected, solTransaction)
 
     toastRun(async () => {
       const result = await promise
@@ -127,7 +125,7 @@
           await info.fetchBalance(paymentStore, authStore.identity.svmAddress)
           break
         case 'base':
-        case 'base-sepolia':
+        case 'base-testnet':
           await info.fetchBalance(paymentStore, authStore.identity.evmAddress)
           break
         case 'icp':
@@ -154,15 +152,18 @@
   onMount(() => {
     return toastRun(async (_signal, abortingQue) => {
       const url = new URL(page.url)
-      const { txid, paymentRequirementsResponse } =
-        await parseAndVerifyPaymentMessage(url.hash.slice(1))
+      const { txid, paymentRequired } = await parseAndVerifyPaymentMessage(
+        url.hash.slice(1)
+      )
       tx = txid
-      x402Version = paymentRequirementsResponse.x402Version
+
+      x402Version = paymentRequired.x402Version
       accepts = selectedPaymentRequirements(
-        paymentRequirementsResponse.accepts,
+        paymentRequired,
         authStore.supportNetworks
       )
-      responseError = paymentRequirementsResponse.error
+      resource = accepts[0]?.resource() || null
+      responseError = paymentRequired.error || ''
       await tick()
       await handleSelectRequirement('')
 
@@ -183,9 +184,40 @@
         class="flex flex-col gap-4 rounded-xl border border-slate-100 bg-white/80 p-4 shadow-sm backdrop-blur md:gap-6 md:p-6"
       >
         <header class="flex flex-col gap-2">
-          <span class="text-xs font-semibold text-sky-600"
-            >x402 v{x402Version}</span
-          >
+          <div class="">
+            <span
+              class="rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-600"
+              >x402 V{x402Version}</span
+            >
+            {#if responseError && !success}
+              <span class="ml-2 text-sm text-red-600">{responseError}</span>
+            {/if}
+          </div>
+
+          {#if resource}
+            <div class="space-y-2">
+              <p
+                class="flex items-center gap-2 text-sm text-pretty wrap-break-word text-slate-500"
+              >
+                <span class="break-all"
+                  >{pruneText(resource.url || '--', 100)}</span
+                >
+                {#if resource.mimeType}
+                  <span class="rounded-full bg-sky-100 px-2 py-1 text-xs"
+                    >{resource.mimeType}</span
+                  >
+                {/if}
+              </p>
+              {#if resource.description}
+                <h3 class="font-semibold text-slate-900">
+                  {resource.description}
+                </h3>
+              {/if}
+            </div>
+          {/if}
+
+          <hr class="my-2 border-slate-200" />
+
           {#if success}
             <div class="m-auto mt-4 text-green-600 *:size-10"
               ><QuillPenAiLine /></div
@@ -199,21 +231,11 @@
               >You can close this tab and return to your app.</p
             >
           {:else}
-            <h1 class="text-lg font-semibold text-slate-900 sm:text-2xl">
-              Please select a payment request to proceed.
-            </h1>
+            <h2 class="text-lg font-semibold text-slate-900 sm:text-2xl">
+              Please select a payment request to proceed:
+            </h2>
           {/if}
         </header>
-
-        {#if responseError && !success}
-          <div
-            class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm"
-          >
-            <span>Server response message:</span><span class="ml-2 text-red-600"
-              >{responseError}</span
-            >
-          </div>
-        {/if}
 
         {#if accepts.length > 0}
           <div class="m-auto w-fit max-w-full rounded-xl p-0 shadow-inner">
@@ -259,7 +281,7 @@
                 Selected:
               </span>
               <span class="font-medium text-slate-900"
-                >{selected.formatAmount(selected.maxAmountRequired)}</span
+                >{selected.formatAmount(selected.amountRequired)}</span
               >
               <span class="truncate font-medium text-slate-900">
                 {`${selected.token!.name} (${selected.token!.symbol})`}

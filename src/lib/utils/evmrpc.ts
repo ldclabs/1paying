@@ -1,10 +1,7 @@
-import {
-  type EvmPayload,
-  type PaymentPayload,
-  type PaymentRequirements
-} from '$lib/types/pay'
+import { type EvmPayload } from '$lib/types/pay'
 import { bytesToHex, randomBytes } from '@noble/hashes/utils'
 import { createRequest, JSON_MIME_TYPE } from './fetcher'
+import { PaymentInfo } from './payment.svelte'
 
 /// EIP3009
 export const authorizationTypes = {
@@ -125,20 +122,15 @@ export class EvmRpc {
   async createAndSignPayment(
     signer: EvmSigner,
     payer: string,
-    x402Version: number,
-    paymentRequirements: PaymentRequirements,
+    payment: PaymentInfo,
     chainId: number
-  ): Promise<PaymentPayload<EvmPayload>> {
-    const paymentPayload = this.#createTransferWithAuthorizationMessage(
-      payer,
-      x402Version,
-      paymentRequirements
-    )
+  ): Promise<EvmPayload> {
+    const payload = this.#createTransferWithAuthorizationMessage(payer, payment)
     const {
       asset,
       extra
     }: { asset: string; extra?: { name?: string; version?: string } } =
-      paymentRequirements
+      payment.payment
     const name = extra?.name
     const version = extra?.version
 
@@ -151,40 +143,34 @@ export class EvmRpc {
         verifyingContract: asset
       },
       primaryType: authorizationPrimaryType,
-      message: paymentPayload.payload.authorization
+      message: payload.authorization
     }
 
-    paymentPayload.payload.signature = await signer.signTypedData(data, payer)
-    return paymentPayload
+    payload.signature = await signer.signTypedData(data, payer)
+    return payload
   }
 
   #createTransferWithAuthorizationMessage(
     payer: string,
-    x402Version: number,
-    paymentRequirements: PaymentRequirements
-  ): PaymentPayload<EvmPayload> {
+    payment: PaymentInfo
+  ): EvmPayload {
     const nonce = '0x' + bytesToHex(randomBytes(32))
     const validAfter = BigInt(
       Math.floor(Date.now() / 1000) - 600 // 10 minutes before
     ).toString()
     const validBefore = BigInt(
-      Math.floor(Date.now() / 1000 + paymentRequirements.maxTimeoutSeconds)
+      Math.floor(Date.now() / 1000 + payment.payment.maxTimeoutSeconds)
     ).toString()
 
     return {
-      x402Version,
-      scheme: paymentRequirements.scheme,
-      network: paymentRequirements.network,
-      payload: {
-        signature: '',
-        authorization: {
-          from: payer,
-          to: paymentRequirements.payTo,
-          value: paymentRequirements.maxAmountRequired,
-          validAfter: validAfter.toString(),
-          validBefore: validBefore.toString(),
-          nonce
-        }
+      signature: '',
+      authorization: {
+        from: payer,
+        to: payment.payment.payTo,
+        value: payment.amountRequired.toString(),
+        validAfter: validAfter.toString(),
+        validBefore: validBefore.toString(),
+        nonce
       }
     }
   }

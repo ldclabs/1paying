@@ -22,6 +22,7 @@ import {
 } from '@ldclabs/ic-auth'
 import { authStore } from './auth.svelte'
 import { type VersionedTransaction } from '@solana/web3.js'
+import { type PaymentRequirements } from '@ldclabs/1paying-kit'
 
 const API_ENDPOINT = 'https://api.1pay.ing'
 
@@ -55,23 +56,17 @@ class PaymentStore extends EventTarget {
     this.#identity = anonymousIdentity
     this.#icpAPI = {}
     this.#svmRpc = new SvmRpc([
-      'https://solana-mainnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X',
-      'https://api.mainnet-beta.solana.com'
+      'https://solana-mainnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X'
     ])
     this.#svmdevRpc = new SvmRpc(
-      [
-        'https://api.devnet.solana.com',
-        'https://solana-devnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X'
-      ],
+      ['https://solana-devnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X'],
       true
     )
     this.#baseRpc = new EvmRpc([
-      'https://base-mainnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X',
-      'https://mainnet.base.org'
+      'https://base-mainnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X'
     ])
     this.#baseSepoliaRpc = new EvmRpc([
-      'https://base-sepolia.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X',
-      'https://sepolia.base.org'
+      'https://base-testnet.g.alchemy.com/v2/kSUUF5j-oOY3j6Cszdi4X'
     ])
   }
 
@@ -137,7 +132,7 @@ class PaymentStore extends EventTarget {
         )
       case 'base':
         return await this.#baseRpc.getErc20Balance(address, token.address)
-      case 'base-sepolia':
+      case 'base-testnet':
         return await this.#baseSepoliaRpc.getErc20Balance(
           address,
           token.address
@@ -149,28 +144,27 @@ class PaymentStore extends EventTarget {
 
   buildX402Request(
     info: PaymentInfo,
-    x402Version: number,
     solTransaction?: VersionedTransaction
   ): Promise<TransactionResult<string>> {
     let promise: Promise<TransactionResult<string>>
-    switch (info.payment.network) {
+    switch (info.network) {
       case 'icp':
-        promise = this.#icpBuildX402Request(info, x402Version)
+        promise = this.#icpBuildX402Request(info)
         break
       case 'solana':
       case 'solana-devnet':
-        promise = this.#solBuildX402Request(info, x402Version, solTransaction)
+        promise = this.#solBuildX402Request(info, solTransaction)
         break
       case 'base':
-      case 'base-sepolia':
-        promise = this.#baseBuildX402Request(info, x402Version)
+      case 'base-testnet':
+        promise = this.#baseBuildX402Request(info)
         break
       default:
         return Promise.resolve({
           status: 'error',
           error: {
             code: 0,
-            message: `Unsupported network: ${info.payment.network}`
+            message: `Unsupported network: ${info.originNetwork}`
           }
         })
     }
@@ -320,42 +314,26 @@ class PaymentStore extends EventTarget {
   }
 
   async #icpBuildX402Request(
-    info: PaymentInfo,
-    x402Version: number
+    info: PaymentInfo
   ): Promise<TransactionResult<string>> {
     if (!this.#icpX402) {
       throw new Error('ICP identity is not set')
     }
 
-    const amountToApprove =
-      info.maxAmountRequired + BigInt(info.token?.fee || 0n)
+    const amountToApprove = info.amountRequired + BigInt(info.token?.fee || 0n)
     if (amountToApprove > info.balance) {
       throw new Error('Insufficient balance for payment and fee')
     }
 
     const x402Request = await this.#icpX402.buildX402Request(
-      info.payment,
-      x402Version
+      info.payment as PaymentRequirements,
+      info.x402Version
     )
+
     return {
       status: 'completed',
-      result: Buffer.from(JSON.stringify(x402Request.paymentPayload)).toString(
-        'base64'
-      ),
-      log: {
-        x402Version: x402Version,
-        network: info.payment.network,
-        scheme: info.payment.scheme,
-        payer: this.#identity.getPrincipal().toText(),
-        payTo: info.payment.payTo,
-        asset: info.payment.asset,
-        resource: info.payment.resource,
-        description: info.payment.description,
-        amountRequired: info.payment.maxAmountRequired,
-        amountPaid: info.payment.maxAmountRequired,
-        txStatus: 'pending',
-        signedAt: Date.now()
-      }
+      result: info.toPaymentPayloadBase64(x402Request.paymentPayload.payload),
+      log: info.toLog(this.#identity.getPrincipal().toText())
     }
   }
 
@@ -370,7 +348,7 @@ class PaymentStore extends EventTarget {
     }
     return await rpc.createTransaction(
       this.#identity.svmAddress!,
-      info.payment,
+      info,
       info.token!.decimals,
       info.token!.programId!
     )
@@ -378,7 +356,6 @@ class PaymentStore extends EventTarget {
 
   #solBuildX402Request(
     info: PaymentInfo,
-    x402Version: number,
     solTransaction?: VersionedTransaction
   ): Promise<TransactionResult<string>> {
     const rpc =
@@ -388,47 +365,26 @@ class PaymentStore extends EventTarget {
       throw new Error('SVM signer is not available')
     }
     const promise = solTransaction
-      ? rpc.signPayment(
-          signer,
-          x402Version,
-          info.payment.scheme,
-          info.payment.network,
-          solTransaction
-        )
+      ? rpc.signPayment(signer, solTransaction)
       : rpc.createAndSignPayment(
           signer,
           this.#identity.svmAddress!,
-          x402Version,
-          info.payment,
+          info,
           info.token!.decimals,
           info.token!.programId!
         )
 
-    return promise.then(async (payload) => {
+    return promise.then((payload) => {
       return {
         status: 'completed',
-        result: Buffer.from(JSON.stringify(payload)).toString('base64'),
-        log: {
-          x402Version: x402Version,
-          network: info.payment.network,
-          scheme: info.payment.scheme,
-          payer: this.#identity.svmAddress!,
-          payTo: info.payment.payTo,
-          asset: info.payment.asset,
-          resource: info.payment.resource,
-          description: info.payment.description,
-          amountRequired: info.payment.maxAmountRequired,
-          amountPaid: info.payment.maxAmountRequired,
-          txStatus: 'pending',
-          signedAt: Date.now()
-        }
+        result: info.toPaymentPayloadBase64(payload),
+        log: info.toLog(this.#identity.svmAddress!)
       }
     })
   }
 
   async #baseBuildX402Request(
-    info: PaymentInfo,
-    x402Version: number
+    info: PaymentInfo
   ): Promise<TransactionResult<string>> {
     const rpc =
       info.payment.network === 'base' ? this.#baseRpc : this.#baseSepoliaRpc
@@ -440,28 +396,14 @@ class PaymentStore extends EventTarget {
     const payload = await rpc.createAndSignPayment(
       signer,
       this.#identity.evmAddress!,
-      x402Version,
-      info.payment,
+      info,
       info.token!.chainId!
     )
 
     return {
       status: 'completed',
-      result: Buffer.from(JSON.stringify(payload)).toString('base64'),
-      log: {
-        x402Version: x402Version,
-        network: info.payment.network,
-        scheme: info.payment.scheme,
-        payer: this.#identity.evmAddress!,
-        payTo: info.payment.payTo,
-        asset: info.payment.asset,
-        resource: info.payment.resource,
-        description: info.payment.description,
-        amountRequired: info.payment.maxAmountRequired,
-        amountPaid: info.payment.maxAmountRequired,
-        txStatus: 'pending',
-        signedAt: Date.now()
-      }
+      result: info.toPaymentPayloadBase64(payload),
+      log: info.toLog(this.#identity.evmAddress!)
     }
   }
 }
