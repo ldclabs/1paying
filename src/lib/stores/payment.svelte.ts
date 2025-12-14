@@ -20,7 +20,7 @@ import {
   deterministicEncode,
   signMessage
 } from '@ldclabs/ic-auth'
-import { authStore } from './auth.svelte'
+import { authStore, getPaymentToken, setPaymentToken } from './auth.svelte'
 import { type VersionedTransaction } from '@solana/web3.js'
 import { type PaymentRequirements } from '@ldclabs/1paying-kit'
 
@@ -89,7 +89,15 @@ class PaymentStore extends EventTarget {
         identity.id as any as SignIdentity
       )
 
-      this.tryRefreshTxsCwt().then(async () => {
+      getPaymentToken().then(async (auth) => {
+        if (auth && auth.id === identity.getPrincipal().toText()) {
+          this.#txsCwt = auth.token
+          this.#cwtExpiresAt = auth.expiresAt
+          if (Date.now() < this.#cwtExpiresAt) {
+            this.dispatchEvent(new Event(EventReady))
+          }
+        }
+        await this.tryRefreshTxsCwt()
         // const profile = await this.getProfile()
         // console.log('User profile:', profile)
       })
@@ -297,6 +305,11 @@ class PaymentStore extends EventTarget {
       this.#cwtExpiresAt = result.expiresAt
 
       this.#refreshingTxsCwt = false
+      await setPaymentToken({
+        id: this.#identity.getPrincipal().toText(),
+        token: result.token,
+        expiresAt: result.expiresAt
+      })
 
       if (!hadToken && this.#txsCwt) {
         this.dispatchEvent(new Event(EventReady))
@@ -329,7 +342,7 @@ class PaymentStore extends EventTarget {
       info.payment as PaymentRequirements,
       info.x402Version
     )
-
+    await this.#icpX402.ensureAllowance(info.payment.asset, amountToApprove)
     return {
       status: 'completed',
       result: info.toPaymentPayloadBase64(x402Request.paymentPayload.payload),

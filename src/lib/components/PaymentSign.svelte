@@ -69,7 +69,7 @@
 
     solTransaction = undefined
     selectedAddress = ''
-    switch (selected.payment.network) {
+    switch (selected.network) {
       case 'solana':
         isLoading = true
         selectedAddress = `${pruneAddress(authStore.identity.svmAddress)} on Solana`
@@ -119,7 +119,7 @@
     for (const info of accepts) {
       info.supportNetworks = authStore.supportNetworks
 
-      switch (info.payment.network) {
+      switch (info.network) {
         case 'solana':
         case 'solana-devnet':
           await info.fetchBalance(paymentStore, authStore.identity.svmAddress)

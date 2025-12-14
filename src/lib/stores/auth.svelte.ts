@@ -466,6 +466,20 @@ class AuthStore extends EventTarget {
 
 export const authStore = new AuthStore()
 
+export interface PaymentToken {
+  id: string
+  token: string
+  expiresAt: number
+}
+
+export async function getPaymentToken(): Promise<PaymentToken | null> {
+  return await globalKV.get<PaymentToken>('State', 'PaymentToken')
+}
+
+export async function setPaymentToken(token: PaymentToken): Promise<void> {
+  await globalKV.set('State', token, 'PaymentToken')
+}
+
 AuthStore.init().catch((err) => {
   console.error('Failed to initialize AuthStore', err)
 })

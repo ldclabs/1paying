@@ -41,7 +41,7 @@ export async function parseAndVerifyPaymentMessage(input: string) {
   }
 }
 
-export function getTxUrl(network: string, tx: string): string {
+function getTxUrl(network: string, tx: string): string {
   if (!network || !tx) {
     return ''
   }
@@ -70,6 +70,8 @@ export function getAssetUrl(token: TokenInfo | null): string {
       return `https://basescan.org/token/${token.address}`
     case 'base-testnet':
       return `https://sepolia.basescan.org/token/${token.address}`
+    case 'icp':
+      return `https://www.icexplorer.io/token/details/${token.address}`
     default:
       return ''
   }
@@ -85,6 +87,8 @@ export function getAccountUrl(addr: string, token: TokenInfo | null): string {
       return `https://basescan.org/address/${addr}`
     case 'base-testnet':
       return `https://sepolia.basescan.org/address/${addr}`
+    case 'icp':
+      return `https://www.icexplorer.io/address/details/${addr}`
     default:
       return ''
   }
@@ -269,7 +273,7 @@ export class PaymentLogInfo {
     this.log = $state(log)
     this.amountRequired = BigInt(log.amountRequired)
     this.amountPaid = BigInt(log.amountPaid)
-    this.token = getTokenInfo(log.network, log.asset)
+    this.token = getTokenInfo(getNetwork(log.network), log.asset)
   }
 
   get assetUrl(): string {
