@@ -116,6 +116,9 @@
   }
 
   async function fetchMyBalance() {
+    if (!authStore.identity.isAuthenticated) {
+      return
+    }
     for (const info of accepts) {
       info.supportNetworks = authStore.supportNetworks
 
@@ -150,7 +153,7 @@
   }
 
   onMount(() => {
-    return toastRun(async (_signal, abortingQue) => {
+    const rt = toastRun(async (_signal, abortingQue) => {
       const url = new URL(page.url)
       const { txid, paymentRequired } = await parseAndVerifyPaymentMessage(
         url.hash.slice(1)
@@ -166,14 +169,17 @@
       responseError = paymentRequired.error || ''
       await tick()
       await handleSelectRequirement('')
+      await fetchMyBalance()
 
       authStore.addEventListener(EventLogin, fetchMyBalance)
       abortingQue.push(() => {
         authStore.removeEventListener(EventLogin, fetchMyBalance)
       })
-    }).finally(() => {
+    })
+    rt.finally(() => {
       isReady = true
     })
+    return rt.abort
   })
 </script>
 

@@ -103,7 +103,7 @@ export function getNetwork(network: string): string {
     case 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp':
       return 'solana'
     case 'solana-devnet':
-    case 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1sK6u9hC4BXj':
+    case 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1':
       return 'solana-devnet'
     case 'base':
     case 'eip155:8453':
