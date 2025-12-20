@@ -86,10 +86,14 @@
   }
 
   onMount(() => {
-    paymentStore.addEventListener(EventReady, refreshHistory)
-
-    return () => {
-      paymentStore.removeEventListener(EventReady, refreshHistory)
+    if (isAuthenticated) {
+      refreshHistory()
+      return () => {}
+    } else {
+      paymentStore.addEventListener(EventReady, refreshHistory)
+      return () => {
+        paymentStore.removeEventListener(EventReady, refreshHistory)
+      }
     }
   })
 </script>

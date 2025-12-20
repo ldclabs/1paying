@@ -24,7 +24,7 @@
 
   let { isReady = $bindable() }: { isReady: boolean } = $props()
 
-  let isLoading = $state<boolean>(false)
+  let isLoading = $state<boolean>(true)
   let isSigningIn = $state<boolean>(false)
   let signFinished = $state(false)
   let signFailed = $state('')
@@ -169,12 +169,17 @@
       responseError = paymentRequired.error || ''
       await tick()
       await handleSelectRequirement('')
-      await fetchMyBalance()
 
-      authStore.addEventListener(EventLogin, fetchMyBalance)
-      abortingQue.push(() => {
-        authStore.removeEventListener(EventLogin, fetchMyBalance)
-      })
+      if (isAuthenticated) {
+        await fetchMyBalance()
+      } else {
+        authStore.addEventListener(EventLogin, fetchMyBalance)
+        abortingQue.push(() => {
+          authStore.removeEventListener(EventLogin, fetchMyBalance)
+        })
+      }
+
+      isLoading = false
     })
     rt.finally(() => {
       isReady = true

@@ -6,6 +6,13 @@
   import ArrowRightUpLine from '$lib/icons/arrow-right-up-line.svelte'
   import MenuFill from '$lib/icons/menu-fill.svelte'
   import MenuUnfoldLine from '$lib/icons/menu-unfold-line.svelte'
+  import Wallet3Line from '$lib/icons/wallet-3-line.svelte'
+  import VerifiedBadgeFill from '$lib/icons/verified-badge-fill.svelte'
+  import ExchangeFundsLine from '$lib/icons/exchange-funds-line.svelte'
+  import CheckDoubleLine from '$lib/icons/check-double-line.svelte'
+  import AppsAiLine from '$lib/icons/apps-ai-line.svelte'
+  import QrScanLine from '$lib/icons/qr-scan-line.svelte'
+  import RefreshLine from '$lib/icons/refresh-line.svelte'
   import PrimaryButton from '$lib/ui/PrimaryButton.svelte'
   import { onMount } from 'svelte'
 
@@ -26,21 +33,25 @@
   const userBenefits = [
     {
       title: 'Freedom from Subscriptions',
+      icon: VerifiedBadgeFill,
       description:
         'Why pay $15/month when you only want to read one article? With 1Pay.ing, you pay pennies for exactly what you consume. No waste, no commitments.'
     },
     {
       title: 'One Wallet, Zero Friction',
+      icon: Wallet3Line,
       description:
         'Forget creating accounts and entering credit card details for every site. Your 1Pay.ing wallet is your universal pass to the premium web.'
     },
     {
       title: 'Global & Private',
+      icon: ExchangeFundsLine,
       description:
         "Works anywhere in the world. You don't need a bank account, just an internet connection. You control your data and your funds."
     },
     {
       title: 'Fair for Everyone',
+      icon: CheckDoubleLine,
       description:
         'Creators get paid instantly for their work. You pay less by only buying what you need. We removed the middlemen and the fees.'
     }
@@ -49,16 +60,19 @@
   const howItWorks = [
     {
       title: '1. Discover',
+      icon: AppsAiLine,
       description:
         'Find premium content, AI tools, or APIs you want to use. Look for the "Pay with 1Pay.ing" option.'
     },
     {
       title: '2. One-Click Pay',
+      icon: QrScanLine,
       description:
         'No login forms. The 1Pay.ing wallet pops up with the exact price (e.g., $0.02). Just tap "Approve".'
     },
     {
       title: '3. Instant Access',
+      icon: RefreshLine,
       description:
         "The payment settles in milliseconds. Your content unlocks immediately. It's faster than loading a credit card page."
     }
@@ -376,117 +390,166 @@
     <section
       id="app"
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-[calc(100vh-80px)] overflow-hidden lg:max-h-384"
+      class="relative min-h-[calc(100vh-80px)] overflow-hidden"
     >
       <div
-        class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_60%)]"
+        class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.15),transparent_50%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.1),transparent_50%)]"
       ></div>
       <div
         use:parallax={{ speed: 0.18 }}
-        class="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-8 lg:flex-row lg:items-center lg:py-24"
+        class="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-12 lg:flex-row lg:items-center lg:py-24"
       >
-        <div use:fadeIn class="max-w-2xl space-y-6">
-          <span
-            class="inline-flex items-center rounded-full border border-slate-100 bg-sky-50 px-4 py-1 text-xs font-semibold tracking-[0.4em] text-sky-600 uppercase"
-          >
-            The Future of Payments
-          </span>
-          <h1
-            class="font-outfit text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
-          >
-            Unlock the Web, <br /> One Cent at a Time.
-          </h1>
-          <p class="text-lg text-slate-600 sm:text-xl">
-            <span class="font-outfit font-bold text-black">1Pay.ing</span> is the
-            universal wallet for the new economy. Pay $0.01 for an article or $0.05
-            for an AI image. No subscriptions. No sign-ups. Just instant access.
+        <div use:fadeIn class="max-w-2xl space-y-8">
+          <div class="space-y-4">
+            <span
+              class="inline-flex items-center rounded-full border border-sky-100 bg-sky-50/50 px-4 py-1 text-xs font-bold tracking-[0.2em] text-sky-600 uppercase backdrop-blur-sm"
+            >
+              The Future of Payments
+            </span>
+            <h1
+              class="font-outfit text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl"
+            >
+              Unlock the Web, <br />
+              <span
+                class="bg-linear-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent"
+              >
+                One Cent at a Time.
+              </span>
+            </h1>
+          </div>
+          <p class="text-lg leading-relaxed text-slate-600 sm:text-xl">
+            <span class="font-outfit font-bold text-slate-900">1Pay.ing</span> is
+            the universal wallet for the new economy. Pay $0.01 for an article or
+            $0.05 for an AI image. No subscriptions. No sign-ups. Just instant access.
           </p>
 
-          <ul class="grid text-sm text-slate-600">
+          <ul class="space-y-3 text-sm font-medium text-slate-600">
             {#each heroChecklist as item}
-              <li class="flex items-center gap-2 rounded-sm px-4 py-2">
-                <span
-                  class="size-3 flex-none rounded-full bg-sky-500 inset-shadow-sm inset-shadow-indigo-500"
-                ></span>
+              <li class="flex items-center gap-3">
+                <div
+                  class="flex size-5 items-center justify-center rounded-full bg-sky-500 text-white shadow-sm"
+                >
+                  <svg
+                    class="size-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="3"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
                 <span>{item}</span>
               </li>
             {/each}
           </ul>
-        </div>
-        <div
-          use:fadeIn={{ delay: 200 }}
-          class="w-full max-w-md self-center rounded-sm border border-slate-100 bg-white/90 p-8 shadow-2xl shadow-sky-500/15 backdrop-blur lg:max-w-lg"
-        >
-          <div
-            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <h2
-              class="text-base font-semibold tracking-[0.4em] text-slate-600 uppercase"
-            >
-              Try It Now
-            </h2>
+
+          <div class="flex flex-wrap gap-4 pt-4">
             <PrimaryButton
               onclick={launchApp}
               isLoading={isLoadingApp}
-              class="bg-green-100! px-4! py-2! font-semibold"
+              class="h-12 rounded-full bg-sky-600 px-8 text-base font-bold text-white shadow-lg shadow-sky-200 transition-all hover:bg-sky-700 hover:shadow-sky-300 active:scale-95"
             >
-              <span class="text-sm text-sky-600">Launch Wallet</span>
+              Launch Wallet
             </PrimaryButton>
-          </div>
-          <p class="mt-4 text-sm text-slate-600">
-            Experience the friction-free web. Connect your wallet once, and pay
-            for content across the internet with a single tap.
-          </p>
-          <div class="mt-6 space-y-4 text-sm text-slate-600">
-            <div
-              class="rounded-sm border border-slate-100 bg-white p-4 shadow-sm shadow-slate-900/5"
+            <a
+              href="#merchants"
+              class="inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-white px-8 text-base font-bold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-95"
             >
-              <h3 class="text-sm font-semibold text-slate-900"
-                >Imagine a web where you can:</h3
-              >
-              <ul class="mt-3 space-y-2">
-                <li class="flex items-center gap-2">
-                  <span class="h-2 w-2 rounded-full bg-sky-500"></span>
-                  <span>Read a premium article for $0.10</span>
-                </li>
-                <li class="flex items-center gap-2">
-                  <span class="h-2 w-2 rounded-full bg-sky-500"></span>
-                  <span>Generate an AI image for $0.05</span>
-                </li>
-                <li class="flex items-center gap-2">
-                  <span class="h-2 w-2 rounded-full bg-sky-500"></span>
-                  <span>Watch a video ad-free for $0.02</span>
-                </li>
-              </ul>
-            </div>
+              For Merchants
+            </a>
           </div>
-          <div class="mt-6 grid gap-4">
+        </div>
+
+        <div
+          use:fadeIn={{ delay: 200 }}
+          class="relative w-full max-w-md self-center lg:max-w-lg"
+        >
+          <div
+            class="absolute -inset-4 rounded-4xl bg-linear-to-tr from-sky-500/20 to-indigo-500/20 blur-2xl"
+          ></div>
+          <div
+            class="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-8 shadow-2xl shadow-sky-500/10 backdrop-blur-xl"
+          >
             <div
-              class="rounded-sm border border-slate-100 bg-slate-50 p-4 text-left shadow-sm shadow-slate-900/5"
+              class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              <h3
-                class="text-sm font-semibold tracking-[0.3em] text-sky-600 uppercase"
+              <h2
+                class="text-xs font-bold tracking-[0.3em] text-slate-400 uppercase"
               >
-                Live Demo
-              </h3>
-              <p class="mt-3 text-sm text-slate-600">
-                See how fast it is. Buy us a virtual coffee using 1Pay.ing
-                micropayments.
-              </p>
-              <div
-                class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <span
-                  class="text-xs font-semibold tracking-[0.3em] text-slate-400 uppercase"
-                >
-                  Powered by 1Pay.ing
+                Live Experience
+              </h2>
+              <div class="flex items-center gap-2">
+                <span class="relative flex h-2 w-2">
+                  <span
+                    class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"
+                  ></span>
+                  <span
+                    class="relative inline-flex h-2 w-2 rounded-full bg-green-500"
+                  ></span>
                 </span>
+                <span class="text-[10px] font-bold text-slate-500 uppercase"
+                  >Network Active</span
+                >
+              </div>
+            </div>
+
+            <div class="mt-8 space-y-6">
+              <div
+                class="rounded-xl border border-slate-100 bg-slate-50/50 p-5 transition-all hover:bg-white hover:shadow-md"
+              >
+                <h3 class="text-sm font-bold text-slate-900"
+                  >Imagine a web where you can:</h3
+                >
+                <ul class="mt-4 space-y-3">
+                  <li class="flex items-center justify-between text-sm">
+                    <span class="text-slate-600">Read a premium article</span>
+                    <span class="font-outfit font-bold text-sky-600">$0.10</span
+                    >
+                  </li>
+                  <li class="flex items-center justify-between text-sm">
+                    <span class="text-slate-600">Generate an AI image</span>
+                    <span class="font-outfit font-bold text-sky-600">$0.05</span
+                    >
+                  </li>
+                  <li class="flex items-center justify-between text-sm">
+                    <span class="text-slate-600">Watch a video ad-free</span>
+                    <span class="font-outfit font-bold text-sky-600">$0.02</span
+                    >
+                  </li>
+                </ul>
+              </div>
+
+              <div
+                class="rounded-xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase"
+                      >Demo Payment</p
+                    >
+                    <p class="mt-1 text-lg font-bold">Buy us a coffee</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase"
+                      >Price</p
+                    >
+                    <p class="font-outfit mt-1 text-lg font-bold text-sky-400"
+                      >$1.00</p
+                    >
+                  </div>
+                </div>
                 <a
-                  class="inline-flex items-center justify-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400"
+                  class="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 py-3 text-sm font-bold transition-all hover:bg-sky-400 active:scale-95"
                   href="https://1paying-coffee.zensh.workers.dev/"
                   target="1PayingCoffeeDemo"
                 >
-                  Buy Coffee Demo
+                  <span>Pay with 1Pay.ing</span>
+                  <ArrowRightUpLine />
                 </a>
               </div>
             </div>
@@ -498,33 +561,39 @@
     <section
       id="benefits"
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-screen border-y border-slate-100 bg-sky-50 py-8 lg:max-h-384 lg:py-24"
+      class="relative min-h-screen border-y border-slate-100 bg-slate-50/50 py-16 lg:py-24"
     >
       <div use:parallax class="mx-auto max-w-6xl px-6">
-        <div use:fadeIn>
-          <p
-            class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
+        <div use:fadeIn class="text-center">
+          <p class="text-xs font-bold tracking-[0.3em] text-sky-600 uppercase"
             >Why 1Pay.ing?</p
           >
           <h2
-            class="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl"
+            class="mt-6 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
           >
             The web was broken. We fixed it.
           </h2>
-          <p class="mt-6 max-w-2xl text-base text-slate-600">
+          <p class="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
             Subscriptions are expensive. Ads are annoying.
-            <span class="font-outfit font-bold text-black">1Pay.ing</span> brings
+            <span class="font-outfit font-bold text-slate-900">1Pay.ing</span> brings
             back the original vision of the internet: a place where value flows freely
             between creators and users.
           </p>
         </div>
-        <div use:staggerChildren class="mt-12 grid gap-4 md:grid-cols-2">
+        <div use:staggerChildren class="mt-16 grid gap-6 md:grid-cols-2">
           {#each userBenefits as benefit}
             <article
-              class="rounded-sm border border-slate-100 bg-white p-8 shadow-lg shadow-slate-900/5"
+              class="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-sky-500/5"
             >
-              <h3 class="text-xl font-semibold">{benefit.title}</h3>
-              <p class="mt-4 text-sm text-slate-600">{benefit.description}</p>
+              <div
+                class="mb-6 flex size-12 items-center justify-center rounded-xl bg-sky-50 text-sky-600 transition-colors group-hover:bg-sky-500 group-hover:text-white"
+              >
+                <benefit.icon />
+              </div>
+              <h3 class="text-xl font-bold text-slate-900">{benefit.title}</h3>
+              <p class="mt-4 leading-relaxed text-slate-600">
+                {benefit.description}
+              </p>
             </article>
           {/each}
         </div>
@@ -534,63 +603,90 @@
     <section
       id="merchants"
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-screen py-8 lg:max-h-384 lg:py-24"
+      class="relative min-h-screen py-16 lg:py-24"
     >
       <div use:parallax class="mx-auto max-w-6xl px-6">
         <div use:fadeIn>
-          <p
-            class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
+          <p class="text-xs font-bold tracking-[0.3em] text-sky-600 uppercase"
             >For Merchants & Creators</p
           >
           <h2
-            class="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl"
+            class="mt-6 max-w-3xl text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
           >
             Monetize anything in minutes.
           </h2>
-          <p class="mt-6 max-w-3xl text-base text-slate-600">
+          <p class="mt-6 max-w-3xl text-lg text-slate-600">
             Stop losing revenue to complex subscriptions. With <span
-              class="font-outfit font-bold text-black">1Pay.ing</span
+              class="font-outfit font-bold text-slate-900">1Pay.ing</span
             >, you can monetize any content, tool, or service instantly. Simple
             for you, seamless for your users.
           </p>
         </div>
-        <div class="mt-12 grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
-          <div use:staggerChildren>
+        <div class="mt-16 grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+          <div use:staggerChildren class="space-y-8">
             <h3
-              class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
+              class="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase"
               >Your Customer's Journey</h3
             >
-            <ol class="mt-6 space-y-4">
-              {#each howItWorks as step, index}
-                <li
-                  class="flex gap-4 rounded-sm border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5"
+            <div
+              class="relative space-y-8 before:absolute before:top-2 before:left-6 before:h-[calc(100%-16px)] before:w-px before:bg-slate-100"
+            >
+              {#each howItWorks as step}
+                <div
+                  class="relative flex gap-6 rounded-2xl border border-transparent p-4 transition-all hover:border-slate-100 hover:bg-slate-50/50"
                 >
-                  <span class="mt-1 text-sm font-semibold text-sky-600"
-                    >0{index + 1}</span
+                  <div
+                    class="relative z-10 flex size-12 flex-none items-center justify-center rounded-full bg-white shadow-sm ring-4 ring-slate-50"
                   >
+                    <div class="text-sky-600">
+                      <step.icon />
+                    </div>
+                  </div>
                   <div>
-                    <h4 class="text-lg font-semibold">{step.title}</h4>
-                    <p class="mt-2 text-sm text-slate-600">{step.description}</p
+                    <h4 class="text-lg font-bold text-slate-900"
+                      >{step.title}</h4
+                    >
+                    <p class="mt-2 text-sm leading-relaxed text-slate-600"
+                      >{step.description}</p
                     >
                   </div>
-                </li>
+                </div>
               {/each}
-            </ol>
+            </div>
           </div>
           <div
             use:fadeIn={{ delay: 300 }}
-            class="flex min-w-0 flex-col rounded-sm border border-slate-100 bg-white p-6 shadow-2xl shadow-sky-500/10"
+            class="flex min-w-0 flex-col rounded-3xl border border-slate-100 bg-white p-2 shadow-2xl shadow-sky-500/5"
           >
-            <div
-              class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
-              >Integration Example</div
-            >
-            <p class="mt-4 text-sm text-slate-600">
-              Works with your existing website or app. Just a few lines of code
-              to start accepting payments.
-            </p>
-            <div class="mt-4 overflow-x-auto rounded-md bg-black p-4">
-              {@html codeSample}
+            <div class="rounded-2xl bg-slate-900 p-8">
+              <div class="mb-6 flex items-center justify-between">
+                <div class="flex gap-1.5">
+                  <div class="size-3 rounded-full bg-red-500/20"></div>
+                  <div class="size-3 rounded-full bg-amber-500/20"></div>
+                  <div class="size-3 rounded-full bg-emerald-500/20"></div>
+                </div>
+                <div
+                  class="text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                  >Integration Example</div
+                >
+              </div>
+              <div class="overflow-x-auto font-mono text-sm leading-relaxed">
+                {@html codeSample}
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-sm font-medium text-slate-600">
+                Works with your existing website or app. Just a few lines of
+                code to start accepting payments.
+              </p>
+              <div class="mt-6 flex items-center gap-4">
+                <a
+                  href="https://github.com/ldclabs/1paying-kit"
+                  target="_blank"
+                  class="text-sm font-bold text-sky-600 hover:underline"
+                  >View Documentation →</a
+                >
+              </div>
             </div>
           </div>
         </div>
@@ -599,34 +695,39 @@
 
     <section
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-screen bg-sky-50 py-8 lg:max-h-384 lg:py-24"
+      class="relative min-h-screen bg-slate-50/50 py-16 lg:py-24"
     >
       <div use:parallax class="mx-auto max-w-6xl px-6">
-        <div use:fadeIn>
-          <p
-            class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
+        <div use:fadeIn class="text-center">
+          <p class="text-xs font-bold tracking-[0.3em] text-sky-600 uppercase"
             >Platform Features</p
           >
           <h2
-            class="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl"
+            class="mt-6 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
           >
             Everything you need to build a paid service.
           </h2>
         </div>
-        <div use:staggerChildren class="mt-12 grid gap-4 sm:grid-cols-2">
+        <div
+          use:staggerChildren
+          class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {#each developerHighlights as feature}
             <article
-              class="rounded-sm border border-slate-100 bg-white p-8 shadow-xl shadow-slate-900/10"
+              class="group rounded-2xl border border-slate-100 bg-white p-8 shadow-sm transition-all hover:border-sky-100 hover:bg-sky-50/30 hover:shadow-lg hover:shadow-sky-500/5"
             >
               <div class="flex items-center justify-between">
-                <h3 class=" text-xl font-semibold">{feature.title}</h3>
+                <h3 class="text-lg font-bold text-slate-900">{feature.title}</h3
+                >
                 <span
-                  class="rounded-full border border-slate-100 bg-sky-50 px-3 py-1 text-[10px] font-semibold tracking-[0.4em] text-sky-600 uppercase"
+                  class="rounded-full bg-sky-50 px-3 py-1 text-[10px] font-bold tracking-wider text-sky-600 uppercase group-hover:bg-sky-500 group-hover:text-white"
                 >
                   {feature.badge}
                 </span>
               </div>
-              <p class="mt-4 text-sm text-slate-600">{feature.description}</p>
+              <p class="mt-4 text-sm leading-relaxed text-slate-600"
+                >{feature.description}</p
+              >
             </article>
           {/each}
         </div>
@@ -636,69 +737,71 @@
     <section
       id="tokenomics"
       use:neuralGrid={{ palette: 'blue' }}
-      class="relative min-h-screen overflow-hidden py-8 lg:max-h-400 lg:py-24"
+      class="relative min-h-screen py-16 lg:py-24"
     >
       <div
-        class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_bottom,rgba(99,102,241,0.12),transparent_70%)]"
+        class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_bottom,rgba(99,102,241,0.08),transparent_70%)]"
       ></div>
       <div use:parallax class="mx-auto max-w-6xl px-6">
         <div use:fadeIn>
-          <p
-            class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
+          <p class="text-xs font-bold tracking-[0.3em] text-sky-600 uppercase"
             >The PAY Token</p
           >
           <h2
-            class="mt-6 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl"
+            class="mt-6 max-w-3xl text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
           >
             The fuel for the new economy.
           </h2>
-          <p class="mt-6 max-w-3xl text-base text-slate-600">
-            <span class="font-outfit font-bold text-black">PAY</span> (<a
+          <p class="mt-6 max-w-3xl text-lg text-slate-600">
+            <span class="font-outfit font-bold text-slate-900">PAY</span> (<a
               href="https://solscan.io/token/PAYiNGqaLFRdBomkQY3JXZeCm7wzK7hKuhrJDzcZBWN"
               target="1PayingToken"
-              class="inline-flex flex-row items-center align-middle text-xs hover:text-sky-500"
+              class="inline-flex flex-row items-center align-middle text-xs font-bold text-sky-600 hover:text-sky-500"
             >
               <img
                 src="/_assets/images/sol.webp"
                 alt="Solana"
-                class="mr-1 inline-block size-4 rounded-full align-middle"
+                class="mr-1.5 inline-block size-4 rounded-full align-middle"
               />
               <span>PAYiNG...ZBWN</span>
-              <span class="*:size-4"><ArrowRightUpLine /></span>
+              <span class="ml-0.5 *:size-3.5"><ArrowRightUpLine /></span>
             </a>) is the utility token that powers
-            <span class="font-outfit font-bold text-black">1Pay.ing</span>. It
-            aligns the interests of users, developers, and the platform itself.
+            <span class="font-outfit font-bold text-slate-900">1Pay.ing</span>.
+            It aligns the interests of users, developers, and the platform
+            itself.
           </p>
         </div>
-        <div use:staggerChildren class="mt-12 grid gap-4 md:grid-cols-2">
+        <div use:staggerChildren class="mt-16 grid gap-6 md:grid-cols-2">
           {#each tokenFlywheels as flywheel}
             <article
-              class="rounded-sm border border-slate-100 bg-white p-8 shadow-2xl shadow-slate-900/10"
+              class="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm transition-all hover:shadow-lg"
             >
-              <h3 class="text-xl font-semibold">{flywheel.title}</h3>
-              <p class="mt-4 text-sm text-slate-600">{flywheel.description}</p>
+              <h3 class="text-xl font-bold text-slate-900">{flywheel.title}</h3>
+              <p class="mt-4 leading-relaxed text-slate-600"
+                >{flywheel.description}</p
+              >
             </article>
           {/each}
         </div>
 
-        <div class="mt-8 grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
+        <div class="mt-12 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div
             use:fadeIn={{ delay: 100 }}
-            class="flex flex-col items-center justify-center rounded-sm border border-slate-100 bg-slate-50 p-8 shadow-inner shadow-slate-900/10"
+            class="flex flex-col items-center justify-center rounded-3xl border border-slate-100 bg-slate-50/50 p-10 shadow-inner"
           >
             <div class="relative w-full max-w-xs">
               <svg
                 viewBox="0 0 200 200"
                 role="img"
                 aria-label="PAY token allocation pie chart"
-                class="h-auto w-full"
+                class="h-auto w-full drop-shadow-2xl"
               >
                 {#each tokenAllocationSlices as slice}
                   <path
                     d={slice.path}
                     fill={slice.color}
                     stroke="white"
-                    stroke-width="1"
+                    stroke-width="2"
                     class="allocation-slice"
                   />
                 {/each}
@@ -712,124 +815,174 @@
                   x={tokenAllocationChartCenter}
                   y={tokenAllocationChartCenter - 6}
                   text-anchor="middle"
-                  class="fill-slate-900 text-sm font-semibold"
+                  class="fill-slate-900 text-[10px] font-bold tracking-widest uppercase"
                 >
                   {tokenAllocationTotal.label}
                 </text>
                 <text
                   x={tokenAllocationChartCenter}
-                  y={tokenAllocationChartCenter + 12}
+                  y={tokenAllocationChartCenter + 14}
                   text-anchor="middle"
-                  class="fill-slate-500 text-xs"
+                  class="font-outfit fill-sky-600 text-lg font-bold"
                 >
                   {tokenAllocationTotal.value}
                 </text>
               </svg>
             </div>
-            <p class="mt-4 max-w-sm text-center text-xs text-slate-500">
+            <p
+              class="mt-8 max-w-sm text-center text-xs font-medium text-slate-400"
+            >
               {tokenAllocationTotal.description}
             </p>
-            <ul class="mt-6 w-full space-y-4">
+            <ul class="mt-10 w-full space-y-4">
               {#each tokenAllocationSlices as slice}
-                <li class="flex gap-3 text-sm text-slate-600">
-                  <span
-                    class="mt-1 h-3 w-3 flex-none rounded-full"
-                    style={`background-color: ${slice.color};`}
-                  ></span>
-                  <div>
-                    <p class="font-semibold text-slate-900">{slice.label}</p>
-                    <p class="text-xs text-slate-500">{slice.value}</p>
+                <li
+                  class="flex items-center justify-between rounded-xl border border-transparent bg-white/50 p-3 transition-all hover:border-slate-100 hover:bg-white"
+                >
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="h-3 w-3 flex-none rounded-full shadow-sm"
+                      style={`background-color: ${slice.color};`}
+                    ></span>
+                    <span class="text-sm font-bold text-slate-700"
+                      >{slice.label}</span
+                    >
                   </div>
+                  <span class="font-outfit text-xs font-bold text-slate-500"
+                    >{slice.value}</span
+                  >
                 </li>
               {/each}
             </ul>
           </div>
-          <div
-            use:staggerChildren
-            class="grid grid-cols-1 gap-4 rounded-sm border border-slate-100 bg-slate-50 p-8 shadow-inner"
-          >
+          <div use:staggerChildren class="flex flex-col gap-6">
             {#each tokenUtilities as utility}
-              <article class="">
+              <article
+                class="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm"
+              >
                 <div class="flex items-center justify-between">
-                  <h3 class="text-xl font-semibold">{utility.title}</h3>
+                  <h3 class="text-xl font-bold text-slate-900"
+                    >{utility.title}</h3
+                  >
                   <span
-                    class="rounded-full border border-slate-100 bg-sky-50 px-3 py-1 text-[10px] font-semibold tracking-[0.4em] text-sky-600 uppercase"
+                    class="rounded-full bg-sky-50 px-3 py-1 text-[10px] font-bold tracking-wider text-sky-600 uppercase"
                   >
                     {utility.badge}
                   </span>
                 </div>
-                <ul class="mt-4 space-y-3 text-sm text-slate-600">
+                <ul class="mt-6 space-y-4">
                   {#each utility.points as point}
-                    <li class="flex items-start gap-2">
-                      <span class="mt-1 h-2 w-2 rounded-full bg-sky-500"></span>
-                      <span>{point}</span>
+                    <li class="flex items-start gap-3">
+                      <div
+                        class="mt-1 flex size-5 flex-none items-center justify-center rounded-full bg-sky-50 text-sky-600"
+                      >
+                        <svg
+                          class="size-3"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <span class="text-sm leading-relaxed text-slate-600"
+                        >{point}</span
+                      >
                     </li>
                   {/each}
                 </ul>
               </article>
             {/each}
-            {#each tokenLaunchPlan as item}
-              <article class="">
-                <h3 class="text-xl font-semibold text-slate-900"
-                  >{item.title}</h3
+            <div class="grid gap-4 sm:grid-cols-2">
+              {#each tokenLaunchPlan as item}
+                <article
+                  class="rounded-2xl border border-slate-100 bg-slate-50/50 p-6"
                 >
-                <p class="mt-4 text-sm text-slate-600">{item.description}</p>
-              </article>
-            {/each}
+                  <h3 class="text-base font-bold text-slate-900"
+                    >{item.title}</h3
+                  >
+                  <p class="mt-2 text-sm leading-relaxed text-slate-600"
+                    >{item.description}</p
+                  >
+                </article>
+              {/each}
+            </div>
           </div>
         </div>
 
-        <div class="mt-8">
+        <div class="mt-12">
           <article
-            class="rounded-sm border border-slate-100 bg-white p-8 shadow-2xl shadow-slate-900/10"
+            class="overflow-hidden rounded-3xl border border-slate-100 bg-white p-10 shadow-xl"
           >
-            <h3 class="text-2xl font-semibold text-slate-900">
+            <h3 class="text-2xl font-bold text-slate-900">
               The Growth Cycle
             </h3>
-            <ol class="mt-4 space-y-3 text-sm text-slate-600">
+            <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
               {#each tokenFlywheelLoop as step, index}
-                <li class="flex items-center gap-2">
-                  <span
-                    class="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-sky-500 text-xs font-semibold text-white"
+                <div class="relative">
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="flex size-8 flex-none items-center justify-center rounded-full bg-sky-600 text-sm font-bold text-white shadow-lg shadow-sky-200"
+                    >
+                      {index + 1}
+                    </span>
+                    {#if index < tokenFlywheelLoop.length - 1}
+                      <div class="hidden h-px flex-1 bg-slate-100 lg:block"
+                      ></div>
+                    {/if}
+                  </div>
+                  <p
+                    class="mt-4 text-sm leading-relaxed font-medium text-slate-600"
                   >
-                    {index + 1}
-                  </span>
-                  <span>{step}</span>
-                </li>
+                    {step.split(': ')[1]}
+                  </p>
+                  <p
+                    class="mt-1 text-[10px] font-bold tracking-wider text-sky-600 uppercase"
+                  >
+                    {step.split(': ')[0]}
+                  </p>
+                </div>
               {/each}
-            </ol>
+            </div>
           </article>
         </div>
       </div>
     </section>
 
-    <section id="contact" class="mt-12 bg-sky-50 py-8 lg:mt-24 lg:py-24">
+    <section id="contact" class="py-16 lg:py-24">
       <div class="mx-auto max-w-5xl px-6">
         <div
           use:fadeIn
-          class="rounded-md border border-slate-100 bg-linear-to-r from-sky-100 via-blue-50 to-purple-100 p-12 text-center shadow-2xl shadow-slate-900/5"
+          class="relative overflow-hidden rounded-4xl bg-slate-900 p-12 text-center shadow-2xl lg:p-20"
         >
-          <p
-            class="text-sm font-semibold tracking-[0.4em] text-sky-600 uppercase"
+          <div
+            class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.2),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.2),transparent_50%)]"
+          ></div>
+          <p class="text-xs font-bold tracking-[0.3em] text-sky-400 uppercase"
             >Join the Revolution</p
           >
-          <h2 class="mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Ready to experience the future of payments?
+          <h2
+            class="mt-8 text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl"
+          >
+            Ready to experience the <br /> future of payments?
           </h2>
-          <p class="mt-6 text-base text-slate-600">
+          <p class="mx-auto mt-8 max-w-2xl text-lg text-slate-400">
             Whether you are a user, a creator, or a developer, there is a place
             for you in the 1Pay.ing ecosystem.
           </p>
-          <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <div class="mt-12 flex flex-col gap-4 sm:flex-row sm:justify-center">
             <a
-              class="inline-flex items-center justify-center rounded-full bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
+              class="inline-flex h-14 items-center justify-center rounded-full bg-sky-500 px-10 text-base font-bold text-white transition-all hover:bg-sky-400 hover:shadow-lg hover:shadow-sky-500/25 active:scale-95"
               href="https://github.com/ldclabs/1paying-kit"
               target="1PayingKit"
             >
               Start Building
             </a>
             <a
-              class="inline-flex items-center justify-center rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-400 hover:bg-white/70"
+              class="inline-flex h-14 items-center justify-center rounded-full border border-slate-700 bg-slate-800/50 px-10 text-base font-bold text-white backdrop-blur-sm transition-all hover:border-slate-600 hover:bg-slate-800 active:scale-95"
               href="https://x.com/1Paying"
               target="1PayingCommunity"
             >
@@ -841,20 +994,49 @@
     </section>
   </main>
 
-  <footer use:fadeIn class="border-t border-slate-100 bg-slate-50 py-8">
+  <footer use:fadeIn class="border-t border-slate-100 bg-white py-16">
     <div class="mx-auto max-w-6xl px-6">
-      <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="col-span-1 lg:col-span-1">
+          <div class="flex items-center gap-2">
+            <img
+              src="/_assets/logo.webp"
+              alt="1Pay.ing"
+              class="size-8 rounded-lg"
+            />
+            <span class="font-outfit text-xl font-bold text-slate-900"
+              >1Pay.ing</span
+            >
+          </div>
+          <p class="mt-6 text-sm leading-relaxed text-slate-500">
+            The universal wallet for the new economy. Pay pennies for exactly
+            what you consume.
+          </p>
+          <div class="mt-8 space-y-2 text-xs font-medium text-slate-400">
+            <p>© {new Date().getFullYear()} 1Pay.ing. All rights reserved.</p>
+            <p>
+              Open source on
+              <a
+                href="https://github.com/ldclabs/1paying"
+                target="1PayingGithub"
+                class="text-sky-600 hover:underline"
+              >
+                GitHub
+              </a>
+            </p>
+          </div>
+        </div>
         {#each footerColumns as column}
           <div>
             <h3
-              class="text-sm font-semibold tracking-[0.4em] text-slate-600 uppercase"
+              class="text-xs font-bold tracking-widest text-slate-900 uppercase"
               >{column.title}</h3
             >
-            <ul class="mt-4 space-y-3 text-sm text-slate-600">
+            <ul class="mt-6 space-y-4 text-sm text-slate-500">
               {#each column.links as link}
                 <li>
                   <a
-                    class="transition hover:text-slate-900"
+                    class="transition-colors hover:text-sky-600"
                     href={link.href}
                     target={'View' + link.label}>{link.label}</a
                   >
@@ -863,33 +1045,6 @@
             </ul>
           </div>
         {/each}
-      </div>
-      <div
-        class="mt-12 flex flex-col gap-2 border-t border-slate-100 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div class="space-y-1">
-          <p>
-            © {new Date().getFullYear()}
-            <span class="font-outfit font-bold text-black">1Pay.ing</span>. All
-            rights reserved.
-          </p>
-          <p>
-            1Pay.ing App is open source on
-            <a
-              href="https://github.com/ldclabs/1paying"
-              target="1PayingGithub"
-              class="font-medium text-sky-600 hover:text-sky-500"
-            >
-              GitHub
-            </a>
-            .
-          </p>
-        </div>
-        <div class="space-y-1 text-right sm:text-left">
-          <a class="block hover:text-slate-900" href="mailto:team@1pay.ing"
-            >hi@1pay.ing</a
-          >
-        </div>
       </div>
     </div>
   </footer>
